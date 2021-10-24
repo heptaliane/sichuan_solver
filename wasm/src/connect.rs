@@ -239,33 +239,15 @@ fn get_l_grid_pair(map: &TileMap, coord1: &Coord, coord2: &Coord) -> [Option<[Gr
         _ => None,
     };
     let directions = match (xs, ys) {
-        (Some(x), Some(y)) => Some([[[x[0], 0], [0, y[1]]], [[0, y[0]], [x[1], 0]]]),
-        _ => None,
+        (Some(x), Some(y)) => [Some([[x[0], 0], [0, y[1]]]), Some([[0, y[0]], [x[1], 0]])],
+        _ => [None, None],
     };
-
-    if let Some(dirs) = directions {
-        return dirs.map(|[dir1, dir2]| {
-            let grid1 = get_grid(map, coord1, &dir1);
-            let grid2 = get_grid(map, coord2, &dir2);
-            return match (grid1, grid2) {
-                (Some(g1), Some(g2)) => Some([g1, g2]),
-                _ => None,
-            };
-        });
-    }
-
-    [None, None]
+    directions.map(|dirs| get_grid_pair(map, coord1, coord2, dirs))
 }
 
 fn get_parallel_grid_pair(map: &TileMap, coord1: &Coord, coord2: &Coord) -> [Option<[Grid; 2]>; 4] {
-    [[1, 0], [-1, 0], [0, 1], [0, -1]].map(|direction| {
-        let grid1 = get_grid(map, coord1, &direction);
-        let grid2 = get_grid(map, coord2, &direction);
-        match (grid1, grid2) {
-            (Some(g1), Some(g2)) => Some([g1, g2]),
-            _ => None,
-        }
-    })
+    [[1, 0], [-1, 0], [0, 1], [0, -1]]
+        .map(|dir| get_grid_pair(map, coord1, coord2, Some([dir, dir])))
 }
 
 fn find_connection(map: &TileMap, coord1: &Coord, coord2: &Coord) -> Option<Path> {

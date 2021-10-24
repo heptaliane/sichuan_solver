@@ -1,7 +1,6 @@
 use ndarray::Array2;
 
 pub type Tile = u8;
-
 pub type CoordElement = usize;
 pub type Coord = [CoordElement; 2];
 pub type TypedCoordElement = i32;
