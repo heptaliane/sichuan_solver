@@ -1,5 +1,5 @@
 use super::components::{
-    Coord, CoordElement, Grid, Path, Tile, TileMap, TypedCoord, TypedCoordElement,
+    Coord, CoordElement, Grid, Nodes, Tile, TileMap, TypedCoord, TypedCoordElement,
 };
 use std::cmp::{max, min};
 use std::collections::hash_map::HashMap;
@@ -130,7 +130,7 @@ fn is_connected_with_single_line(&grid1: &Grid, &grid2: &Grid) -> bool {
             && max(x21, x22) >= min(x11, x12))
 }
 
-fn get_double_line_connection(grid1: &Grid, grid2: &Grid) -> Option<Path> {
+fn get_double_line_connection(grid1: &Grid, grid2: &Grid) -> Option<Nodes> {
     let intersection = get_intersection(grid1, grid2);
     match intersection {
         None => None,
@@ -138,7 +138,7 @@ fn get_double_line_connection(grid1: &Grid, grid2: &Grid) -> Option<Path> {
     }
 }
 
-fn get_triple_line_connection(map: &TileMap, &grid1: &Grid, &grid2: &Grid) -> Option<Path> {
+fn get_triple_line_connection(map: &TileMap, &grid1: &Grid, &grid2: &Grid) -> Option<Nodes> {
     if grid1[0][0] == grid1[1][0] && grid2[0][0] == grid2[1][0] {
         let grid3 = match (grid1, grid2) {
             ([[x1, y11], [_, y12]], [[x2, y21], [_, y22]])
@@ -244,7 +244,7 @@ fn get_parallel_grid_pair(map: &TileMap, coord1: &Coord, coord2: &Coord) -> [Opt
         .map(|dir| get_grid_pair(map, coord1, coord2, Some([dir, dir])))
 }
 
-fn find_connection(map: &TileMap, coord1: &Coord, coord2: &Coord) -> Option<Path> {
+fn find_connection(map: &TileMap, coord1: &Coord, coord2: &Coord) -> Option<Nodes> {
     if is_tile_touched(coord1, coord2) {
         return Some([Some(*coord1), Some(*coord2), None, None]);
     }
