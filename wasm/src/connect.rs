@@ -14,7 +14,10 @@ fn move_coord(map: &TileMap, coord: &Coord, delta: &TypedCoord) -> Option<Coord>
     match moved {
         [x, y] if x < 0 || y < 0 => None,
         [x, y] if x >= (shape[0] as i32) || y >= (shape[1] as i32) => None,
-        _ => Some([moved[0] as CoordElement, moved[1] as CoordElement]),
+        _ => match [moved[0] as CoordElement, moved[1] as CoordElement] {
+            trusted_moved if map[trusted_moved] == None => Some(trusted_moved),
+            _ => None,
+        },
     }
 }
 
@@ -38,37 +41,34 @@ fn get_grid(map: &TileMap, &coord: &Coord, delta: &TypedCoord) -> Option<Grid> {
     Some([coord, cursor])
 }
 
-fn get_grid_coordinate(grid: &Grid) -> Vec<Coord> {
-    match grid {
-        [crd1, crd2] if crd1[0] == crd2[0] => (crd1[1]..=crd2[1])
-            .map(|y| [crd1[0], y])
-            .collect::<Vec<Coord>>(),
-        [crd1, crd2] if crd1[1] == crd2[1] => (crd1[0]..=crd2[0])
-            .map(|x| [x, crd1[1]])
-            .collect::<Vec<Coord>>(),
-        _ => vec![],
-    }
-}
-
-fn get_intersection(grid1: &Grid, grid2: &Grid) -> Option<Coord> {
-    let coords1 = get_grid_coordinate(grid1);
-    let coords2 = get_grid_coordinate(grid2);
-    let mut lut = HashMap::<Coord, usize>::new();
-
-    for coord in [coords1, coords2].concat() {
-        match lut.get(&coord) {
-            Some(cnt) => lut.insert(coord, cnt + 1),
-            None => lut.insert(coord, 0),
-        };
-    }
-
-    let intersections = lut
-        .iter()
-        .filter(|(_, &cnt)| cnt > 1)
-        .map(|(&crd, _)| crd)
-        .collect::<Vec<Coord>>();
-    match intersections.len() {
-        1 => Some(intersections[0]),
+fn get_intersection(&grid1: &Grid, &grid2: &Grid) -> Option<Coord> {
+    match (grid1, grid2) {
+        ([[x11, y11], [x12, y12]], [[x21, y21], [x22, y22]]) if x11 == x12 && y21 == y22 => {
+            match (x11, y21) {
+                (x, y)
+                    if max(x21, x22) >= x
+                        && min(x21, x22) <= x
+                        && max(y11, y12) >= y
+                        && min(y11, y12) <= y =>
+                {
+                    Some([x, y])
+                }
+                _ => None,
+            }
+        }
+        ([[x11, y11], [x12, y12]], [[x21, y21], [x22, y22]]) if y11 == y12 && x21 == x22 => {
+            match (y11, x21) {
+                (y, x)
+                    if max(y21, y22) >= y
+                        && min(y21, y22) <= y
+                        && max(x11, x12) >= x
+                        && min(x11, x12) <= x =>
+                {
+                    Some([x, y])
+                }
+                _ => None,
+            }
+        }
         _ => None,
     }
 }
@@ -114,8 +114,8 @@ fn explore_y_connection(
 }
 
 fn is_tile_touched(&coord1: &Coord, &coord2: &Coord) -> bool {
-    (coord1[0] == coord2[0] && (coord1[1] == coord2[1] + 1) || (coord1[1] + 1 == coord2[1]))
-        || (coord1[1] == coord2[1] && (coord1[0] == coord2[0] + 1) || (coord1[0] + 1 == coord2[0]))
+    (coord1[0] == coord2[0] && (coord1[1] == coord2[1] + 1 || coord1[1] + 1 == coord2[1]))
+        || (coord1[1] == coord2[1] && (coord1[0] == coord2[0] + 1 || coord1[0] + 1 == coord2[0]))
 }
 
 fn is_connected_with_single_line(&grid1: &Grid, &grid2: &Grid) -> bool {
@@ -143,8 +143,6 @@ fn get_double_line_connection(grid1: &Grid, grid2: &Grid) -> Option<Path> {
 }
 
 fn get_triple_line_connection(map: &TileMap, &grid1: &Grid, &grid2: &Grid) -> Option<Path> {
-    let coords = get_grid_coordinate(&grid1);
-
     if grid1[0][0] == grid1[1][0] && grid2[0][0] == grid2[1][0] {
         let grid3 = match (grid1, grid2) {
             ([[x1, y11], [_, y12]], [[x2, y21], [_, y22]])
@@ -288,4 +286,85 @@ fn find_connection(map: &TileMap, coord1: &Coord, coord2: &Coord) -> Option<Path
     }
 
     None
+}
+
+#[test]
+fn test_move_coord() {
+    use ndarray::arr2;
+    let map: TileMap = arr2(&[
+        [None, Some(0), None, Some(0)],
+        [Some(0), None, None, None],
+        [None, None, Some(0), None],
+    ]);
+    /* tile map:
+     * x 0 x 0
+     * 0 x x x
+     * x x 0 x
+     */
+
+    assert_eq!(move_coord(&map, &[1, 1], &[1, 0]), Some([2, 1]));
+    assert_eq!(move_coord(&map, &[1, 1], &[0, 1]), Some([1, 2]));
+    assert_eq!(move_coord(&map, &[2, 1], &[-1, 0]), Some([1, 1]));
+    assert_eq!(move_coord(&map, &[2, 1], &[0, -1]), Some([2, 0]));
+    assert_eq!(move_coord(&map, &[0, 0], &[1, 0]), None);
+    assert_eq!(move_coord(&map, &[0, 0], &[0, 1]), None);
+    assert_eq!(move_coord(&map, &[1, 1], &[-1, 0]), None);
+    assert_eq!(move_coord(&map, &[1, 1], &[0, -1]), None);
+    assert_eq!(move_coord(&map, &[0, 0], &[-1, 0]), None);
+    assert_eq!(move_coord(&map, &[0, 0], &[0, -1]), None);
+    assert_eq!(move_coord(&map, &[2, 3], &[1, 0]), None);
+    assert_eq!(move_coord(&map, &[2, 3], &[0, 1]), None);
+}
+
+#[test]
+fn test_get_grid() {
+    use ndarray::arr2;
+    let map: TileMap = arr2(&[
+        [None, Some(0), None, Some(0)],
+        [Some(0), None, None, None],
+        [None, None, None, Some(0)],
+    ]);
+    /* tile map:
+     * x 0 x 0
+     * 0 x x x
+     * x x x 0
+     */
+
+    assert_eq!(get_grid(&map, &[0, 1], &[0, 1]), Some([[0, 1], [0, 2]]));
+    assert_eq!(get_grid(&map, &[0, 3], &[0, -1]), Some([[0, 3], [0, 2]]));
+    assert_eq!(get_grid(&map, &[0, 3], &[1, 0]), Some([[0, 3], [1, 3]]));
+    assert_eq!(get_grid(&map, &[2, 3], &[-1, 0]), Some([[2, 3], [1, 3]]));
+    assert_eq!(get_grid(&map, &[1, 0], &[0, 1]), Some([[1, 0], [1, 3]]));
+    assert_eq!(get_grid(&map, &[2, 3], &[0, -1]), Some([[2, 3], [2, 0]]));
+    assert_eq!(get_grid(&map, &[1, 0], &[1, 0]), Some([[1, 0], [2, 0]]));
+    assert_eq!(get_grid(&map, &[1, 0], &[-1, 0]), Some([[1, 0], [0, 0]]));
+}
+
+#[test]
+fn test_get_intersection() {
+    let check_all = |grid1: Grid, grid2: Grid, expected: Option<Coord>| {
+        for [g1, g2] in [[grid1, grid2], [grid2, grid1]] {
+            for ga in [g1, [g1[1], g1[0]]] {
+                for gb in [g2, [g2[1], g2[0]]] {
+                    assert_eq!(get_intersection(&ga, &gb), expected);
+                }
+            }
+        }
+    };
+
+    check_all([[0, 0], [0, 1]], [[0, 0], [1, 0]], Some([0, 0]));
+    check_all([[1, 1], [0, 1]], [[1, 1], [1, 0]], Some([1, 1]));
+    check_all([[0, 0], [0, 2]], [[0, 1], [1, 1]], Some([0, 1]));
+    check_all([[1, 0], [1, 2]], [[0, 1], [1, 1]], Some([1, 1]));
+    check_all([[0, 0], [0, 1]], [[0, 2], [1, 2]], None);
+    check_all([[2, 2], [2, 1]], [[0, 0], [2, 0]], None);
+    check_all([[0, 0], [0, 2]], [[1, 1], [2, 1]], None);
+    check_all([[2, 0], [2, 2]], [[0, 1], [1, 1]], None);
+    check_all([[1, 0], [1, 1]], [[0, 0], [2, 0]], Some([1, 0]));
+    check_all([[1, 0], [1, 1]], [[0, 1], [2, 1]], Some([1, 1]));
+    check_all([[1, 0], [1, 2]], [[0, 1], [2, 1]], Some([1, 1]));
+    check_all([[0, 0], [0, 2]], [[0, 1], [0, 3]], None);
+    check_all([[0, 0], [0, 2]], [[1, 1], [1, 3]], None);
+    check_all([[0, 0], [2, 0]], [[1, 0], [3, 0]], None);
+    check_all([[0, 0], [2, 0]], [[1, 1], [3, 1]], None);
 }
