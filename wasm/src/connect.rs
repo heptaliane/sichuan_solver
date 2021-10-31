@@ -421,3 +421,68 @@ fn test_explore_y_connection() {
     ]);
     assert_eq!(explore_y_connection(&map2, &[1, 3], &[0, 2]), None);
 }
+
+#[test]
+fn test_is_tile_touched() {
+    assert!(is_tile_touched(&[0, 0], &[1, 0]));
+    assert!(is_tile_touched(&[1, 0], &[0, 0]));
+    assert!(is_tile_touched(&[1, 1], &[1, 0]));
+    assert!(is_tile_touched(&[1, 0], &[1, 1]));
+    assert!(!is_tile_touched(&[0, 0], &[1, 1]));
+    assert!(!is_tile_touched(&[0, 0], &[0, 2]));
+    assert!(!is_tile_touched(&[0, 2], &[0, 0]));
+    assert!(!is_tile_touched(&[0, 0], &[2, 0]));
+    assert!(!is_tile_touched(&[2, 0], &[0, 0]));
+}
+
+#[test]
+fn test_is_connect_with_single_line() {
+    assert!(is_connected_with_single_line(
+        &[[0, 0], [0, 2]],
+        &[[0, 1], [0, 3]]
+    ));
+    assert!(is_connected_with_single_line(
+        &[[0, 0], [0, 2]],
+        &[[0, 2], [0, 3]]
+    ));
+    assert!(!is_connected_with_single_line(
+        &[[0, 0], [0, 2]],
+        &[[1, 1], [1, 3]]
+    ));
+    assert!(!is_connected_with_single_line(
+        &[[0, 0], [0, 1]],
+        &[[0, 2], [0, 3]]
+    ));
+    assert!(is_connected_with_single_line(
+        &[[0, 0], [2, 0]],
+        &[[1, 0], [3, 0]]
+    ));
+    assert!(is_connected_with_single_line(
+        &[[0, 0], [2, 0]],
+        &[[2, 0], [3, 0]]
+    ));
+    assert!(!is_connected_with_single_line(
+        &[[0, 0], [2, 0]],
+        &[[1, 1], [3, 1]]
+    ));
+    assert!(!is_connected_with_single_line(
+        &[[0, 0], [1, 0]],
+        &[[2, 0], [3, 0]]
+    ));
+    assert!(!is_connected_with_single_line(
+        &[[0, 0], [1, 0]],
+        &[[0, 0], [0, 1]]
+    ));
+    assert!(!is_connected_with_single_line(
+        &[[0, 0], [2, 0]],
+        &[[1, 0], [1, 1]]
+    ));
+    assert!(!is_connected_with_single_line(
+        &[[0, 1], [1, 1]],
+        &[[0, 0], [1, 2]]
+    ));
+    assert!(!is_connected_with_single_line(
+        &[[0, 1], [0, 2]],
+        &[[0, 0], [1, 0]]
+    ));
+}
