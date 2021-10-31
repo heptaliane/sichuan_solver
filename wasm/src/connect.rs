@@ -22,10 +22,6 @@ fn move_coord(map: &TileMap, coord: &Coord, delta: &TypedCoord) -> Option<Coord>
 }
 
 fn get_grid(map: &TileMap, &coord: &Coord, delta: &TypedCoord) -> Option<Grid> {
-    if map[coord] == None {
-        return None;
-    }
-
     let mut cursor = coord.clone();
     let mut next_cursor = move_coord(map, &coord, delta);
     loop {
@@ -83,7 +79,7 @@ fn explore_x_connection(
         [y1, y2] => (y2, y1),
     };
 
-    for x in xrange[0]..xrange[1] {
+    for x in xrange[0]..=xrange[1] {
         let grid = get_grid(map, &[x, ymin], &[0, 1]);
         match grid {
             Some([_, [_, y]]) if y >= ymax => return Some([[x, ymin], [x, ymax]]),
@@ -367,4 +363,61 @@ fn test_get_intersection() {
     check_all([[0, 0], [0, 2]], [[1, 1], [1, 3]], None);
     check_all([[0, 0], [2, 0]], [[1, 0], [3, 0]], None);
     check_all([[0, 0], [2, 0]], [[1, 1], [3, 1]], None);
+}
+
+#[test]
+fn test_explore_x_connection() {
+    use ndarray::arr2;
+    let map1: TileMap = arr2(&[
+        [None, None, None],
+        [None, Some(0), None],
+        [None, None, None],
+        [None, Some(0), None],
+    ]);
+    /* tile map:
+     * | x x
+     * | 0 |
+     * | x |
+     * | 0 |
+     */
+    assert_eq!(
+        explore_x_connection(&map1, &[1, 3], &[0, 2]),
+        Some([[2, 0], [2, 2]])
+    );
+    assert_eq!(explore_x_connection(&map1, &[1, 1], &[0, 2]), None);
+
+    let map2: TileMap = arr2(&[
+        [None, None, None],
+        [None, Some(0), None],
+        [None, Some(0), None],
+        [None, Some(0), None],
+    ]);
+    assert_eq!(explore_x_connection(&map2, &[1, 3], &[0, 2]), None);
+}
+
+#[test]
+fn test_explore_y_connection() {
+    use ndarray::arr2;
+    let map1: TileMap = arr2(&[
+        [None, None, None, None],
+        [None, Some(0), None, Some(0)],
+        [None, None, None, None],
+    ]);
+    /* tile map:
+     * -------
+     * x 0 x 0
+     * x -----
+     */
+    assert_eq!(
+        explore_y_connection(&map1, &[1, 3], &[0, 2]),
+        Some([[0, 2], [2, 2]])
+    );
+    assert_eq!(explore_y_connection(&map1, &[1, 1], &[0, 2]), None);
+
+    let map2: TileMap = arr2(&[
+        [None, None, None, None],
+        [None, Some(0), Some(0), Some(0)],
+        [None, None, None, None],
+    ]);
+    assert_eq!(explore_y_connection(&map2, &[1, 3], &[0, 2]), None);
 }
