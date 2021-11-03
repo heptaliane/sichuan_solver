@@ -141,14 +141,14 @@ fn get_double_line_connection(grid1: &Grid, grid2: &Grid) -> Option<Nodes> {
 fn get_triple_line_connection(map: &TileMap, &grid1: &Grid, &grid2: &Grid) -> Option<Nodes> {
     if grid1[0][0] == grid1[1][0] && grid2[0][0] == grid2[1][0] {
         let grid3 = match (grid1, grid2) {
-            ([[x1, y11], [_, y12]], [[x2, y21], [_, y22]])
-                if (y11 > y21 && y12 < y22) || (y11 < y21 && y12 > y22) =>
-            {
+            ([[x1, y11], [_, y12]], [[x2, y21], [_, y22]]) if y11 >= y21 && y12 <= y22 => {
                 explore_y_connection(map, &[y12, y22], &[x1, x2])
+            }
+            ([[x1, y11], [_, y12]], [[x2, y21], [_, y22]]) if y11 <= y21 && y12 >= y22 => {
+                explore_y_connection(map, &[y22, y12], &[x1, x2])
             }
             _ => None,
         };
-
         return match grid3 {
             Some(grid) if grid[0][0] == grid1[0][0] => {
                 Some([Some(grid1[0]), Some(grid[0]), Some(grid[1]), Some(grid2[0])])
@@ -162,10 +162,12 @@ fn get_triple_line_connection(map: &TileMap, &grid1: &Grid, &grid2: &Grid) -> Op
 
     if grid1[0][1] == grid1[1][1] && grid2[0][1] == grid2[1][1] {
         let grid3 = match (grid1, grid2) {
-            ([[x11, y1], [x12, _]], [[x21, y2], [x22, _]])
-                if (x11 > x21 && x12 < x22) || (x11 < x21 && x12 > x22) =>
-            {
+            ([[x11, y1], [x12, _]], [[x21, y2], [x22, _]]) if x11 >= x21 && x12 <= x22 => {
+                println!("[{}, {}] [{}, {}]", x12, x22, y1, y2);
                 explore_x_connection(map, &[x12, x22], &[y1, y2])
+            }
+            ([[x11, y1], [x12, _]], [[x21, y2], [x22, _]]) if x11 <= x21 && x12 >= x22 => {
+                explore_x_connection(map, &[x22, x12], &[y1, y2])
             }
             _ => None,
         };
@@ -485,4 +487,175 @@ fn test_is_connect_with_single_line() {
         &[[0, 1], [0, 2]],
         &[[0, 0], [1, 0]]
     ));
+}
+
+#[test]
+fn test_get_double_line_connection() {
+    let to_path =
+        |&c1: &Coord, &c2: &Coord, &c3: &Coord| Some([Some(c1), Some(c2), Some(c3), None]);
+
+    let test_connection = |&ga: &Grid, &gb: &Grid, &intersection: &Option<Coord>| {
+        let actual = get_double_line_connection(&ga, &gb);
+        match intersection {
+            Some(coord) => assert_eq!(actual, to_path(&ga[0], &coord, &gb[0])),
+            None => assert_eq!(actual, None),
+        }
+    };
+
+    let check_all = |grid1: Grid, grid2: Grid, expected: Option<Coord>| {
+        for [g1, g2] in [[grid1, grid2], [grid2, grid1]] {
+            for ga in [g1, [g1[1], g1[0]]] {
+                for gb in [g2, [g2[1], g2[0]]] {
+                    test_connection(&ga, &gb, &expected);
+                }
+            }
+        }
+    };
+
+    check_all([[0, 0], [0, 1]], [[0, 0], [1, 0]], Some([0, 0]));
+    check_all([[1, 1], [0, 1]], [[1, 1], [1, 0]], Some([1, 1]));
+    check_all([[0, 0], [0, 2]], [[0, 1], [1, 1]], Some([0, 1]));
+    check_all([[1, 0], [1, 2]], [[0, 1], [1, 1]], Some([1, 1]));
+    check_all([[0, 0], [0, 1]], [[0, 2], [1, 2]], None);
+    check_all([[2, 2], [2, 1]], [[0, 0], [2, 0]], None);
+    check_all([[0, 0], [0, 2]], [[1, 1], [2, 1]], None);
+    check_all([[2, 0], [2, 2]], [[0, 1], [1, 1]], None);
+    check_all([[1, 0], [1, 1]], [[0, 0], [2, 0]], Some([1, 0]));
+    check_all([[1, 0], [1, 1]], [[0, 1], [2, 1]], Some([1, 1]));
+    check_all([[1, 0], [1, 2]], [[0, 1], [2, 1]], Some([1, 1]));
+    check_all([[0, 0], [0, 2]], [[0, 1], [0, 3]], None);
+    check_all([[0, 0], [0, 2]], [[1, 1], [1, 3]], None);
+    check_all([[0, 0], [2, 0]], [[1, 0], [3, 0]], None);
+    check_all([[0, 0], [2, 0]], [[1, 1], [3, 1]], None);
+}
+
+#[test]
+fn test_get_triple_line_connection() {
+    let to_path = |coords: Option<[Coord; 4]>| -> Option<Nodes> {
+        match coords {
+            Some([c1, c2, c3, c4]) => Some([Some(c1), Some(c2), Some(c3), Some(c4)]),
+            None => None,
+        }
+    };
+
+    let check_all = |map: &TileMap, grid1: Grid, grid2: Grid, expected: Option<Nodes>| {
+        for (g1, g2) in [(grid1, grid2), (grid2, grid1)] {
+            let actual = get_triple_line_connection(map, &g1, &g2);
+            assert_eq!(actual, expected);
+        }
+    };
+
+    use ndarray::arr2;
+    let map: TileMap = arr2(&[
+        [None, None, None, None],
+        [None, None, Some(0), None],
+        [None, None, None, None],
+        [None, None, Some(0), None],
+    ]);
+    /*
+     * x x x x
+     * x x 0 x
+     * x x x x
+     * x x 0 x
+     */
+    check_all(
+        &map,
+        [[0, 0], [0, 1]],
+        [[1, 2], [1, 1]],
+        to_path(Some([[0, 0], [0, 1], [1, 1], [1, 2]])),
+    );
+    check_all(
+        &map,
+        [[0, 2], [0, 1]],
+        [[1, 0], [1, 1]],
+        to_path(Some([[0, 2], [0, 1], [1, 1], [1, 0]])),
+    );
+    check_all(
+        &map,
+        [[0, 0], [1, 0]],
+        [[2, 1], [1, 1]],
+        to_path(Some([[0, 0], [1, 0], [1, 1], [2, 1]])),
+    );
+    check_all(
+        &map,
+        [[0, 2], [0, 1]],
+        [[1, 0], [1, 1]],
+        to_path(Some([[0, 2], [0, 1], [1, 1], [1, 0]])),
+    );
+    check_all(
+        &map,
+        [[0, 0], [0, 2]],
+        [[2, 3], [2, 1]],
+        to_path(Some([[0, 0], [0, 1], [2, 1], [2, 3]])),
+    );
+    check_all(
+        &map,
+        [[0, 3], [0, 1]],
+        [[1, 0], [1, 2]],
+        to_path(Some([[0, 3], [0, 1], [1, 1], [1, 0]])),
+    );
+    check_all(
+        &map,
+        [[0, 0], [2, 0]],
+        [[3, 1], [1, 1]],
+        to_path(Some([[0, 0], [1, 0], [1, 1], [3, 1]])),
+    );
+    check_all(
+        &map,
+        [[3, 0], [1, 0]],
+        [[0, 1], [2, 1]],
+        to_path(Some([[3, 0], [1, 0], [1, 1], [0, 1]])),
+    );
+    check_all(&map, [[0, 1], [0, 2]], [[2, 3], [2, 2]], to_path(None));
+    check_all(&map, [[0, 3], [0, 2]], [[2, 1], [2, 2]], to_path(None));
+    check_all(&map, [[0, 1], [1, 1]], [[2, 3], [1, 3]], to_path(None));
+    check_all(&map, [[2, 1], [1, 1]], [[0, 3], [1, 3]], to_path(None));
+    check_all(
+        &map,
+        [[0, 0], [1, 0]],
+        [[0, 1], [1, 1]],
+        to_path(Some([[0, 0], [1, 0], [1, 1], [0, 1]])),
+    );
+    check_all(
+        &map,
+        [[1, 0], [0, 0]],
+        [[1, 1], [0, 1]],
+        to_path(Some([[1, 0], [0, 0], [0, 1], [1, 1]])),
+    );
+    check_all(
+        &map,
+        [[0, 0], [0, 1]],
+        [[1, 0], [1, 1]],
+        to_path(Some([[0, 0], [0, 1], [1, 1], [1, 0]])),
+    );
+    check_all(
+        &map,
+        [[0, 1], [0, 0]],
+        [[1, 1], [1, 0]],
+        to_path(Some([[0, 1], [0, 0], [1, 0], [1, 1]])),
+    );
+    check_all(
+        &map,
+        [[0, 0], [3, 0]],
+        [[0, 3], [3, 3]],
+        to_path(Some([[0, 0], [2, 0], [2, 3], [0, 3]])),
+    );
+    check_all(
+        &map,
+        [[3, 0], [0, 0]],
+        [[3, 3], [0, 3]],
+        to_path(Some([[3, 0], [0, 0], [0, 3], [3, 3]])),
+    );
+    check_all(
+        &map,
+        [[0, 0], [0, 3]],
+        [[2, 0], [2, 3]],
+        to_path(Some([[0, 0], [0, 1], [2, 1], [2, 0]])),
+    );
+    check_all(
+        &map,
+        [[0, 3], [0, 0]],
+        [[2, 3], [2, 0]],
+        to_path(Some([[0, 3], [0, 0], [2, 0], [2, 3]])),
+    );
 }
