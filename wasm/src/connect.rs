@@ -138,44 +138,57 @@ fn get_double_line_connection(grid1: &Grid, grid2: &Grid) -> Option<Nodes> {
     }
 }
 
+fn get_overlapped_x_range(&grid1: &Grid, &grid2: &Grid) -> Option<[CoordElement; 2]> {
+    let sort_x = |x1: CoordElement, x2: CoordElement| if x1 > x2 { (x1, x2) } else { (x2, x1) };
+    match (grid1, grid2) {
+        ([[_, y11], [_, y12]], [[_, y21], [_, y22]]) if y11 != y12 || y21 != y22 => None,
+        ([[x11, _], [x12, _]], [[x21, _], [x22, _]]) => {
+            let (xmax1, xmin1) = sort_x(x11, x12);
+            let (xmax2, xmin2) = sort_x(x21, x22);
+            match (min(xmax1, xmax2), max(xmin1, xmin2)) {
+                (xmax, xmin) if xmax >= xmin => Some([xmin, xmax]),
+                _ => None,
+            }
+        }
+    }
+}
+
+fn get_overlapped_y_range(&grid1: &Grid, &grid2: &Grid) -> Option<[CoordElement; 2]> {
+    let sort_y = |y1: CoordElement, y2: CoordElement| if y1 > y2 { (y1, y2) } else { (y2, y1) };
+    match (grid1, grid2) {
+        ([[x11, _], [x12, _]], [[x21, _], [x22, _]]) if x11 != x12 || x21 != x22 => None,
+        ([[_, y11], [_, y12]], [[_, y21], [_, y22]]) => {
+            let (ymax1, ymin1) = sort_y(y11, y12);
+            let (ymax2, ymin2) = sort_y(y21, y22);
+            match (min(ymax1, ymax2), max(ymin1, ymin2)) {
+                (ymax, ymin) if ymax >= ymin => Some([ymin, ymax]),
+                _ => None,
+            }
+        }
+    }
+}
+
 fn get_triple_line_connection(map: &TileMap, &grid1: &Grid, &grid2: &Grid) -> Option<Nodes> {
-    if grid1[0][0] == grid1[1][0] && grid2[0][0] == grid2[1][0] {
-        let grid3 = match (grid1, grid2) {
-            ([[x1, y11], [_, y12]], [[x2, y21], [_, y22]]) if y11 >= y21 && y12 <= y22 => {
-                explore_y_connection(map, &[y12, y22], &[x1, x2])
-            }
-            ([[x1, y11], [_, y12]], [[x2, y21], [_, y22]]) if y11 <= y21 && y12 >= y22 => {
-                explore_y_connection(map, &[y22, y12], &[x1, x2])
-            }
-            _ => None,
-        };
+    if let Some(xrange) = get_overlapped_x_range(&grid1, &grid2) {
+        let grid3 = explore_x_connection(map, &xrange, &[grid1[0][1], grid2[0][1]]);
         return match grid3 {
-            Some(grid) if grid[0][0] == grid1[0][0] => {
+            Some(grid) if grid[0][1] == grid1[0][1] => {
                 Some([Some(grid1[0]), Some(grid[0]), Some(grid[1]), Some(grid2[0])])
             }
-            Some(grid) if grid[0][0] == grid2[0][0] => {
+            Some(grid) if grid[0][1] == grid2[0][1] => {
                 Some([Some(grid2[0]), Some(grid[0]), Some(grid[1]), Some(grid1[0])])
             }
             _ => None,
         };
     }
 
-    if grid1[0][1] == grid1[1][1] && grid2[0][1] == grid2[1][1] {
-        let grid3 = match (grid1, grid2) {
-            ([[x11, y1], [x12, _]], [[x21, y2], [x22, _]]) if x11 >= x21 && x12 <= x22 => {
-                println!("[{}, {}] [{}, {}]", x12, x22, y1, y2);
-                explore_x_connection(map, &[x12, x22], &[y1, y2])
-            }
-            ([[x11, y1], [x12, _]], [[x21, y2], [x22, _]]) if x11 <= x21 && x12 >= x22 => {
-                explore_x_connection(map, &[x22, x12], &[y1, y2])
-            }
-            _ => None,
-        };
+    if let Some(yrange) = get_overlapped_y_range(&grid1, &grid2) {
+        let grid3 = explore_y_connection(map, &yrange, &[grid1[0][0], grid2[0][0]]);
         return match grid3 {
-            Some(grid) if grid[0][1] == grid1[0][1] => {
+            Some(grid) if grid[0][0] == grid1[0][0] => {
                 Some([Some(grid1[0]), Some(grid[0]), Some(grid[1]), Some(grid2[0])])
             }
-            Some(grid) if grid[0][1] == grid2[0][1] => {
+            Some(grid) if grid[0][0] == grid2[0][0] => {
                 Some([Some(grid2[0]), Some(grid[0]), Some(grid[1]), Some(grid1[0])])
             }
             _ => None,
@@ -530,6 +543,52 @@ fn test_get_double_line_connection() {
 }
 
 #[test]
+fn test_get_overlapped_x_range() {
+    let check_all = |grid1: Grid, grid2: Grid, expected: Option<[CoordElement; 2]>| {
+        for (g1, g2) in [(grid1, grid2), (grid2, grid1)] {
+            for ga in [grid1, [grid1[1], grid1[0]]] {
+                for gb in [grid2, [grid2[1], grid2[0]]] {
+                    assert_eq!(get_overlapped_x_range(&grid1, &grid2), expected);
+                }
+            }
+        }
+    };
+
+    check_all([[0, 0], [1, 0]], [[1, 0], [2, 0]], Some([1, 1]));
+    check_all([[0, 0], [2, 0]], [[1, 0], [2, 0]], Some([1, 2]));
+    check_all([[0, 0], [2, 0]], [[1, 0], [3, 0]], Some([1, 2]));
+    check_all([[0, 0], [1, 0]], [[2, 0], [3, 0]], None);
+    check_all([[0, 0], [0, 1]], [[1, 0], [2, 0]], None);
+    check_all([[0, 0], [0, 1]], [[0, 1], [0, 2]], None);
+    check_all([[0, 0], [0, 2]], [[0, 1], [0, 2]], None);
+    check_all([[0, 0], [0, 2]], [[0, 1], [0, 3]], None);
+    check_all([[0, 0], [0, 1]], [[0, 2], [0, 3]], None);
+}
+
+#[test]
+fn test_get_overlapped_y_range() {
+    let check_all = |grid1: Grid, grid2: Grid, expected: Option<[CoordElement; 2]>| {
+        for (g1, g2) in [(grid1, grid2), (grid2, grid1)] {
+            for ga in [grid1, [grid1[1], grid1[0]]] {
+                for gb in [grid2, [grid2[1], grid2[0]]] {
+                    assert_eq!(get_overlapped_y_range(&grid1, &grid2), expected);
+                }
+            }
+        }
+    };
+
+    check_all([[0, 0], [1, 0]], [[1, 0], [2, 0]], None);
+    check_all([[0, 0], [2, 0]], [[1, 0], [2, 0]], None);
+    check_all([[0, 0], [2, 0]], [[1, 0], [3, 0]], None);
+    check_all([[0, 0], [1, 0]], [[2, 0], [3, 0]], None);
+    check_all([[0, 0], [0, 1]], [[1, 0], [2, 0]], None);
+    check_all([[0, 0], [0, 1]], [[0, 1], [0, 2]], Some([1, 1]));
+    check_all([[0, 0], [0, 2]], [[0, 1], [0, 2]], Some([1, 2]));
+    check_all([[0, 0], [0, 2]], [[0, 1], [0, 3]], Some([1, 2]));
+    check_all([[0, 0], [0, 1]], [[0, 2], [0, 3]], None);
+}
+
+#[test]
 fn test_get_triple_line_connection() {
     let to_path = |coords: Option<[Coord; 4]>| -> Option<Nodes> {
         match coords {
@@ -612,50 +671,58 @@ fn test_get_triple_line_connection() {
     check_all(&map, [[2, 1], [1, 1]], [[0, 3], [1, 3]], to_path(None));
     check_all(
         &map,
-        [[0, 0], [1, 0]],
-        [[0, 1], [1, 1]],
-        to_path(Some([[0, 0], [1, 0], [1, 1], [0, 1]])),
+        [[1, 1], [2, 1]],
+        [[1, 3], [2, 3]],
+        to_path(Some([[1, 1], [2, 1], [2, 3], [1, 3]])),
     );
     check_all(
         &map,
-        [[1, 0], [0, 0]],
-        [[1, 1], [0, 1]],
-        to_path(Some([[1, 0], [0, 0], [0, 1], [1, 1]])),
-    );
-    check_all(
-        &map,
-        [[0, 0], [0, 1]],
-        [[1, 0], [1, 1]],
-        to_path(Some([[0, 0], [0, 1], [1, 1], [1, 0]])),
-    );
-    check_all(
-        &map,
-        [[0, 1], [0, 0]],
-        [[1, 1], [1, 0]],
-        to_path(Some([[0, 1], [0, 0], [1, 0], [1, 1]])),
-    );
-    check_all(
-        &map,
-        [[0, 0], [3, 0]],
+        [[1, 1], [3, 1]],
         [[0, 3], [3, 3]],
-        to_path(Some([[0, 0], [2, 0], [2, 3], [0, 3]])),
+        to_path(Some([[1, 1], [2, 1], [2, 3], [0, 3]])),
+    );
+    check_all(&map, [[1, 0], [1, 1]], [[2, 3], [3, 3]], None);
+    check_all(&map, [[0, 1], [1, 1]], [[1, 3], [3, 3]], None);
+    check_all(
+        &map,
+        [[3, 1], [2, 1]],
+        [[3, 3], [2, 3]],
+        to_path(Some([[3, 1], [2, 1], [2, 3], [3, 3]])),
     );
     check_all(
         &map,
-        [[3, 0], [0, 0]],
+        [[3, 1], [1, 1]],
         [[3, 3], [0, 3]],
-        to_path(Some([[3, 0], [0, 0], [0, 3], [3, 3]])),
+        to_path(Some([[3, 1], [2, 1], [2, 3], [3, 3]])),
+    );
+    check_all(&map, [[3, 1], [2, 1]], [[1, 3], [0, 3]], None);
+    check_all(&map, [[3, 1], [1, 1]], [[1, 3], [0, 3]], None);
+    check_all(
+        &map,
+        [[0, 2], [0, 3]],
+        [[2, 2], [2, 3]],
+        to_path(Some([[0, 2], [0, 3], [2, 3], [2, 2]])),
     );
     check_all(
         &map,
-        [[0, 0], [0, 3]],
-        [[2, 0], [2, 3]],
-        to_path(Some([[0, 0], [0, 1], [2, 1], [2, 0]])),
+        [[0, 1], [0, 3]],
+        [[2, 2], [2, 3]],
+        to_path(Some([[0, 1], [0, 3], [2, 3], [2, 2]])),
+    );
+    check_all(&map, [[0, 0], [0, 1]], [[2, 2], [2, 3]], None);
+    check_all(&map, [[0, 0], [0, 2]], [[2, 2], [2, 3]], None);
+    check_all(
+        &map,
+        [[0, 2], [0, 1]],
+        [[2, 2], [2, 1]],
+        to_path(Some([[0, 2], [0, 1], [2, 1], [2, 2]])),
     );
     check_all(
         &map,
         [[0, 3], [0, 0]],
-        [[2, 3], [2, 0]],
-        to_path(Some([[0, 3], [0, 0], [2, 0], [2, 3]])),
+        [[2, 2], [2, 1]],
+        to_path(Some([[0, 3], [0, 1], [2, 1], [2, 2]])),
     );
+    check_all(&map, [[0, 3], [0, 2]], [[2, 1], [2, 0]], None);
+    check_all(&map, [[0, 3], [0, 2]], [[2, 2], [2, 0]], None);
 }
