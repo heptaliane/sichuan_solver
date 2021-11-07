@@ -2,7 +2,6 @@ use super::components::{
     Coord, CoordElement, Grid, Nodes, Tile, TileMap, TypedCoord, TypedCoordElement,
 };
 use std::cmp::{max, min};
-use std::collections::hash_map::HashMap;
 
 fn move_coord(map: &TileMap, coord: &Coord, delta: &TypedCoord) -> Option<Coord> {
     let moved: TypedCoord = [
@@ -546,9 +545,9 @@ fn test_get_double_line_connection() {
 fn test_get_overlapped_x_range() {
     let check_all = |grid1: Grid, grid2: Grid, expected: Option<[CoordElement; 2]>| {
         for (g1, g2) in [(grid1, grid2), (grid2, grid1)] {
-            for ga in [grid1, [grid1[1], grid1[0]]] {
-                for gb in [grid2, [grid2[1], grid2[0]]] {
-                    assert_eq!(get_overlapped_x_range(&grid1, &grid2), expected);
+            for ga in [g1, [g1[1], g1[0]]] {
+                for gb in [g2, [g2[1], g2[0]]] {
+                    assert_eq!(get_overlapped_x_range(&ga, &gb), expected);
                 }
             }
         }
@@ -569,9 +568,9 @@ fn test_get_overlapped_x_range() {
 fn test_get_overlapped_y_range() {
     let check_all = |grid1: Grid, grid2: Grid, expected: Option<[CoordElement; 2]>| {
         for (g1, g2) in [(grid1, grid2), (grid2, grid1)] {
-            for ga in [grid1, [grid1[1], grid1[0]]] {
-                for gb in [grid2, [grid2[1], grid2[0]]] {
-                    assert_eq!(get_overlapped_y_range(&grid1, &grid2), expected);
+            for ga in [g1, [g1[1], g1[0]]] {
+                for gb in [g2, [g2[1], g2[0]]] {
+                    assert_eq!(get_overlapped_y_range(&ga, &gb), expected);
                 }
             }
         }
@@ -725,4 +724,68 @@ fn test_get_triple_line_connection() {
     );
     check_all(&map, [[0, 3], [0, 2]], [[2, 1], [2, 0]], None);
     check_all(&map, [[0, 3], [0, 2]], [[2, 2], [2, 0]], None);
+}
+
+#[test]
+fn test_get_faced_x_grid_pair() {
+    use ndarray::arr2;
+    let map: TileMap = arr2(&[
+        [None, Some(0), None, Some(1)],
+        [None, None, None, None],
+        [None, Some(0), Some(1), None],
+        [None, None, None, None],
+    ]);
+    /*
+     * x 0 x 1
+     * x x x x
+     * x 0 1 x
+     * x x x x
+     */
+    let check_all = |coord1: Coord, coord2: Coord, expected: Option<[Grid; 2]>| {
+        if let Some(grids) = expected {
+            for (c1, c2, ex) in [
+                (coord1, coord2, grids),
+                (coord2, coord1, [grids[1], grids[0]]),
+            ] {
+                assert_eq!(get_faced_x_grid_pair(&map, &c1, &c2), Some(ex));
+            }
+        }
+    };
+    check_all([0, 0], [3, 0], Some([[[0, 0], [3, 0]], [[3, 0], [0, 0]]]));
+    check_all([0, 0], [3, 3], Some([[[0, 0], [3, 0]], [[3, 3], [1, 3]]]));
+    check_all([0, 0], [1, 2], Some([[[0, 0], [3, 0]], [[1, 2], [0, 2]]]));
+    check_all([0, 0], [0, 2], None);
+    check_all([0, 0], [3, 2], None);
+}
+
+#[test]
+fn test_get_faced_y_grid_pair() {
+    use ndarray::arr2;
+    let map: TileMap = arr2(&[
+        [None, Some(0), None, Some(1)],
+        [None, None, None, None],
+        [None, Some(0), Some(1), None],
+        [None, None, None, None],
+    ]);
+    /*
+     * x 0 x 1
+     * x x x x
+     * x 0 1 x
+     * x x x x
+     */
+    let check_all = |coord1: Coord, coord2: Coord, expected: Option<[Grid; 2]>| {
+        if let Some(grids) = expected {
+            for (c1, c2, ex) in [
+                (coord1, coord2, grids),
+                (coord2, coord1, [grids[1], grids[0]]),
+            ] {
+                assert_eq!(get_faced_y_grid_pair(&map, &c1, &c2), Some(ex));
+            }
+        }
+    };
+    check_all([1, 0], [1, 3], Some([[[1, 0], [1, 3]], [[1, 3], [1, 0]]]));
+    check_all([1, 0], [3, 3], Some([[[1, 0], [1, 3]], [[3, 3], [3, 0]]]));
+    check_all([1, 1], [3, 2], Some([[[1, 1], [1, 3]], [[3, 2], [3, 0]]]));
+    check_all([0, 0], [1, 2], None);
+    check_all([1, 2], [3, 2], None);
 }
