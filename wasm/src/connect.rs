@@ -789,3 +789,205 @@ fn test_get_faced_y_grid_pair() {
     check_all([0, 0], [1, 2], None);
     check_all([1, 2], [3, 2], None);
 }
+
+#[test]
+fn test_get_l_grid_pair() {
+    use ndarray::arr2;
+    let map: TileMap = arr2(&[
+        [None, None, Some(0), None],
+        [None, None, None, None],
+        [None, Some(0), None, None],
+        [None, None, None, None],
+    ]);
+    /*
+     * x x 0 x
+     * x x x x
+     * x 0 x x
+     * x x x x
+     */
+    let check_all = |coord1: Coord, coord2: Coord, expected: [Option<[Grid; 2]>; 2]| {
+        let actual1 = get_l_grid_pair(&map, &coord1, &coord2);
+        let actual2 = get_l_grid_pair(&map, &coord2, &coord1);
+        let expected2 = match expected {
+            [Some([g11, g21]), Some([g12, g22])] => [Some([g22, g12]), Some([g21, g11])],
+            _ => [None, None],
+        };
+        assert_eq!(actual1, expected);
+        assert_eq!(actual2, expected2);
+    };
+
+    check_all(
+        [1, 0],
+        [3, 2],
+        [
+            Some([[[1, 0], [3, 0]], [[3, 2], [3, 0]]]),
+            Some([[[1, 0], [1, 3]], [[3, 2], [1, 2]]]),
+        ],
+    );
+    check_all(
+        [1, 2],
+        [3, 0],
+        [
+            Some([[[1, 2], [3, 2]], [[3, 0], [3, 3]]]),
+            Some([[[1, 2], [1, 0]], [[3, 0], [0, 0]]]),
+        ],
+    );
+    check_all([0, 0], [1, 0], [None, None]);
+    check_all([0, 0], [0, 1], [None, None]);
+}
+
+#[test]
+fn test_get_parallel_grid_pair() {
+    use ndarray::arr2;
+    let map: TileMap = arr2(&[
+        [None, None, None, None],
+        [None, None, None, None],
+        [None, None, None, None],
+        [None, None, None, None],
+    ]);
+
+    let check_all = |coord1: Coord, coord2: Coord, expected: [Option<[Grid; 2]>; 4]| {
+        let actual1 = get_parallel_grid_pair(&map, &coord1, &coord2);
+        let actual2 = get_parallel_grid_pair(&map, &coord2, &coord1);
+        let expected2 = expected.map(|g: Option<[Grid; 2]>| match g {
+            Some([g1, g2]) => Some([g2, g1]),
+            _ => None,
+        });
+        assert_eq!(actual1, expected);
+        assert_eq!(actual2, expected2);
+    };
+
+    check_all(
+        [1, 1],
+        [2, 2],
+        [
+            Some([[[1, 1], [3, 1]], [[2, 2], [3, 2]]]),
+            Some([[[1, 1], [0, 1]], [[2, 2], [0, 2]]]),
+            Some([[[1, 1], [1, 3]], [[2, 2], [2, 3]]]),
+            Some([[[1, 1], [1, 0]], [[2, 2], [2, 0]]]),
+        ],
+    );
+
+    check_all(
+        [1, 2],
+        [2, 1],
+        [
+            Some([[[1, 2], [3, 2]], [[2, 1], [3, 1]]]),
+            Some([[[1, 2], [0, 2]], [[2, 1], [0, 1]]]),
+            Some([[[1, 2], [1, 3]], [[2, 1], [2, 3]]]),
+            Some([[[1, 2], [1, 0]], [[2, 1], [2, 0]]]),
+        ],
+    );
+}
+
+#[test]
+fn test_find_connection() {
+    use ndarray::arr2;
+    let map: TileMap = arr2(&[
+        [None, None, None, None],
+        [None, Some(0), Some(0), None],
+        [None, Some(1), None, None],
+        [None, None, None, Some(1)],
+    ]);
+
+    let check_all = |coord1: Coord, coord2: Coord, expected: Option<Nodes>| {
+        let actual1 = find_connection(&map, &coord1, &coord2);
+        let actual2 = find_connection(&map, &coord2, &coord1);
+        let expected2 = match expected {
+            Some([Some(c1), Some(c2), None, None]) => Some([Some(c2), Some(c1), None, None]),
+            Some([Some(c1), Some(c2), Some(c3), None]) => {
+                Some([Some(c3), Some(c2), Some(c1), None])
+            }
+            Some([Some(c1), Some(c2), Some(c3), Some(c4)]) => {
+                Some([Some(c4), Some(c3), Some(c2), Some(c1)])
+            }
+            _ => None,
+        };
+        assert_eq!(actual1, expected);
+        assert_eq!(actual2, expected2);
+    };
+
+    check_all(
+        [1, 1],
+        [1, 2],
+        Some([Some([1, 1]), Some([1, 2]), None, None]),
+    );
+    check_all(
+        [0, 0],
+        [0, 3],
+        Some([Some([0, 0]), Some([0, 3]), None, None]),
+    );
+    check_all(
+        [0, 0],
+        [3, 0],
+        Some([Some([0, 0]), Some([3, 0]), None, None]),
+    );
+    assert_eq!(
+        find_connection(&map, &[0, 0], &[1, 1]),
+        Some([Some([0, 0]), Some([1, 0]), Some([1, 1]), None])
+    );
+    assert_eq!(
+        find_connection(&map, &[1, 1], &[0, 0]),
+        Some([Some([1, 1]), Some([0, 1]), Some([0, 0]), None])
+    );
+    assert_eq!(
+        find_connection(&map, &[0, 1], &[1, 0]),
+        Some([Some([0, 1]), Some([0, 0]), Some([1, 0]), None])
+    );
+    assert_eq!(
+        find_connection(&map, &[1, 0], &[0, 1]),
+        Some([Some([1, 0]), Some([0, 0]), Some([0, 1]), None])
+    );
+    assert_eq!(
+        find_connection(&map, &[3, 0], &[2, 3]),
+        Some([Some([2, 3]), Some([2, 2]), Some([3, 2]), Some([3, 0])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[2, 3], &[3, 0]),
+        Some([Some([2, 3]), Some([2, 2]), Some([3, 2]), Some([3, 0])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[1, 0], &[1, 3]),
+        Some([Some([1, 0]), Some([0, 0]), Some([0, 3]), Some([1, 3])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[1, 3], &[1, 0]),
+        Some([Some([1, 0]), Some([0, 0]), Some([0, 3]), Some([1, 3])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[1, 3], &[1, 0]),
+        Some([Some([1, 0]), Some([0, 0]), Some([0, 3]), Some([1, 3])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[1, 0], &[2, 2]),
+        Some([Some([1, 0]), Some([3, 0]), Some([3, 2]), Some([2, 2])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[2, 2], &[1, 0]),
+        Some([Some([1, 0]), Some([3, 0]), Some([3, 2]), Some([2, 2])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[0, 1], &[3, 2]),
+        Some([Some([0, 1]), Some([0, 0]), Some([3, 0]), Some([3, 2])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[3, 2], &[0, 1]),
+        Some([Some([0, 1]), Some([0, 0]), Some([3, 0]), Some([3, 2])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[0, 1], &[2, 2]),
+        Some([Some([0, 1]), Some([0, 3]), Some([2, 3]), Some([2, 2])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[2, 2], &[0, 1]),
+        Some([Some([0, 1]), Some([0, 3]), Some([2, 3]), Some([2, 2])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[1, 3], &[3, 2]),
+        Some([Some([3, 2]), Some([2, 2]), Some([2, 3]), Some([1, 3])]),
+    );
+    assert_eq!(
+        find_connection(&map, &[3, 2], &[1, 3]),
+        Some([Some([3, 2]), Some([2, 2]), Some([2, 3]), Some([1, 3])]),
+    );
+}
