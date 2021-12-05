@@ -1,5 +1,5 @@
 use super::components::{
-    Coord, CoordElement, Grid, Nodes, Tile, TileMap, TypedCoord, TypedCoordElement,
+    Coord, CoordElement, Grid, Nodes, TileMap, TypedCoord, TypedCoordElement,
 };
 use std::cmp::{max, min};
 
@@ -258,7 +258,7 @@ fn get_parallel_grid_pair(map: &TileMap, coord1: &Coord, coord2: &Coord) -> [Opt
         .map(|dir| get_grid_pair(map, coord1, coord2, Some([dir, dir])))
 }
 
-fn find_connection(map: &TileMap, coord1: &Coord, coord2: &Coord) -> Option<Nodes> {
+pub fn find_connection(map: &TileMap, coord1: &Coord, coord2: &Coord) -> Option<Nodes> {
     if is_tile_touched(coord1, coord2) {
         return Some([Some(*coord1), Some(*coord2), None, None]);
     }
