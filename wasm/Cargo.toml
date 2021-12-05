@@ -7,3 +7,4 @@ edition = "2018"
 
 [dependencies]
 ndarray = "0.13.1"
+wasm-bindgen = "0.2.68"
