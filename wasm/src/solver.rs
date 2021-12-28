@@ -1,9 +1,9 @@
 use super::components::{Coord, Nodes, Tile, TileMap};
 use super::connect::find_connection;
 use std::cmp::PartialEq;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 struct ConnectionInfo {
     tile: Tile,
     pair: [Coord; 2],
@@ -108,6 +108,70 @@ fn create_tile_connection_lookup_table(map: &TileMap, maplut: &TileLut) -> Conne
     lut
 }
 
+fn count_unique_coords_in_connections(connections: &Vec<ConnectionInfo>) -> usize {
+    let coords: HashSet<Coord> = connections.iter().map(|conn| conn.pair).flatten().collect();
+    coords.len()
+}
+
+fn get_completed_connections(
+    connections: &Vec<ConnectionInfo>,
+    n_coords: usize,
+) -> Option<Vec<ConnectionInfo>> {
+    let mut result: Vec<ConnectionInfo> = Vec::new();
+    let mut curr = connections.clone();
+    let mut log: Vec<(Vec<ConnectionInfo>, usize)> = Vec::new();
+    let mut idx: usize = 0;
+
+    loop {
+        if count_unique_coords_in_connections(&curr) + result.len() * 2 != n_coords
+            || idx == curr.len()
+        {
+            match log.pop() {
+                Some((conn, i)) if result.len() > 0 => {
+                    result.pop();
+                    curr = conn;
+                    idx = i + 1;
+                }
+                _ => {
+                    return None;
+                }
+            }
+            continue;
+        }
+
+        log.push((curr.clone(), idx));
+        result.push(curr[idx].clone());
+
+        let target = curr[idx].pair;
+        curr = curr
+            .iter()
+            .cloned()
+            .filter(|conn| !(conn.pair.contains(&target[0]) || conn.pair.contains(&target[1])))
+            .collect();
+        idx = 0;
+
+        if count_unique_coords_in_connections(&result) == n_coords {
+            return Some(result);
+        }
+    }
+}
+
+fn collect_completed_connections(map: &TileMap) -> Vec<ConnectionInfo> {
+    let maplut = create_tile_lookup_table(map);
+    let lut = create_tile_connection_lookup_table(map, &maplut);
+    let mut completed: Vec<ConnectionInfo> = Vec::new();
+
+    for (tile, conns) in lut.iter() {
+        let n_coords = maplut[tile].len();
+        match get_completed_connections(&conns, n_coords) {
+            Some(connections) => completed.extend(connections),
+            _ => (),
+        };
+    }
+
+    completed
+}
+
 #[test]
 fn test_create_tile_lookup_table() {
     use ndarray::arr2;
@@ -125,6 +189,7 @@ fn test_create_tile_lookup_table() {
     assert_eq!(lut.get(&4), None);
     assert_eq!(lut.len(), 4);
 }
+
 #[test]
 fn test_collect_connection_single_pair_tiles() {
     use ndarray::arr2;
@@ -348,4 +413,106 @@ fn test_create_tile_connection_lookup_table() {
             nodes: [Some([2, 1]), Some([2, 2]), None, None],
         }])
     );
+}
+
+#[test]
+fn test_count_unique_coords_in_connections() {
+    let build_connections = |pairs: &[[Coord; 2]]| -> Vec<ConnectionInfo> {
+        pairs
+            .iter()
+            .map(|pair| ConnectionInfo {
+                tile: 0,
+                pair: pair.clone(),
+                nodes: [None, None, None, None],
+            })
+            .collect()
+    };
+
+    let coords1 = [[[0, 0], [0, 1]], [[0, 2], [0, 3]]];
+    let coords2 = [[[0, 0], [0, 1]], [[0, 0], [0, 2]]];
+    let coords3 = [
+        [[0, 0], [0, 1]],
+        [[0, 1], [0, 2]],
+        [[0, 2], [0, 3]],
+        [[0, 1], [0, 3]],
+    ];
+
+    assert_eq!(
+        count_unique_coords_in_connections(&build_connections(&coords1)),
+        4
+    );
+    assert_eq!(
+        count_unique_coords_in_connections(&build_connections(&coords2)),
+        3
+    );
+    assert_eq!(
+        count_unique_coords_in_connections(&build_connections(&coords3)),
+        4
+    );
+}
+
+#[test]
+fn test_get_completed_connections() {
+    let build_connections = |pairs: &[[Coord; 2]]| -> Vec<ConnectionInfo> {
+        pairs
+            .iter()
+            .map(|pair| ConnectionInfo {
+                tile: 0,
+                pair: pair.clone(),
+                nodes: [None, None, None, None],
+            })
+            .collect()
+    };
+
+    let conn1 = build_connections(&[[[0, 0], [0, 1]], [[0, 2], [0, 3]]]);
+    assert_eq!(get_completed_connections(&conn1, 4), Some(conn1.clone()));
+    assert_eq!(get_completed_connections(&conn1, 6), None);
+
+    let conn2 = build_connections(&[[[0, 0], [0, 1]], [[0, 0], [0, 2]], [[0, 0], [0, 3]]]);
+    assert_eq!(get_completed_connections(&conn2, 4), None);
+
+    let conn3 = build_connections(&[[[0, 0], [0, 1]], [[0, 0], [0, 2]], [[0, 1], [0, 3]]]);
+    let expected3 = build_connections(&[[[0, 0], [0, 2]], [[0, 1], [0, 3]]]);
+    assert_eq!(get_completed_connections(&conn3, 4), Some(expected3));
+}
+
+#[test]
+fn test_collect_completed_connections() {
+    use ndarray::arr2;
+    let map: TileMap = arr2(&[
+        [Some(0), Some(0), Some(0), Some(0)],
+        [Some(1), Some(1), Some(2), Some(3)],
+        [Some(2), Some(1), Some(1), Some(4)],
+        [Some(4), Some(3), Some(4), Some(4)],
+    ]);
+    /*
+     * 0 0 0 0
+     * 1 1 2 3
+     * 2 1 1 4
+     * 4 3 4 4
+     */
+
+    let expected = vec![
+        ConnectionInfo {
+            pair: [[0, 0], [0, 1]],
+            tile: 0,
+            nodes: [Some([0, 0]), Some([0, 1]), None, None],
+        },
+        ConnectionInfo {
+            pair: [[0, 2], [0, 3]],
+            tile: 0,
+            nodes: [Some([0, 2]), Some([0, 3]), None, None],
+        },
+        ConnectionInfo {
+            pair: [[1, 0], [1, 1]],
+            tile: 1,
+            nodes: [Some([1, 0]), Some([1, 1]), None, None],
+        },
+        ConnectionInfo {
+            pair: [[2, 1], [2, 2]],
+            tile: 1,
+            nodes: [Some([2, 1]), Some([2, 2]), None, None],
+        },
+    ];
+    assert_eq!(collect_completed_connections(&map), expected);
 }
