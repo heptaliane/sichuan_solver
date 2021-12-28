@@ -3,7 +3,7 @@ use super::connect::find_connection;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(Eq, PartialEq, Debug, Clone, Hash)]
 struct ConnectionInfo {
     tile: Tile,
     pair: [Coord; 2],
@@ -39,7 +39,6 @@ fn collect_connection_single_pair_tiles(map: &TileMap) -> Vec<ConnectionInfo> {
     for (&tile, coords) in lut.iter().filter(|(_, coord)| coord.len() == 2) {
         match find_connection(map, &coords[0], &coords[1]) {
             Some(nodes) => {
-                println!("tile: {}", tile);
                 connections.push(ConnectionInfo {
                     tile: tile,
                     pair: [coords[0], coords[1]],
@@ -492,7 +491,7 @@ fn test_collect_completed_connections() {
      * 4 3 4 4
      */
 
-    let expected = vec![
+    let expected: HashSet<&ConnectionInfo> = [
         ConnectionInfo {
             pair: [[0, 0], [0, 1]],
             tile: 0,
@@ -513,6 +512,10 @@ fn test_collect_completed_connections() {
             tile: 1,
             nodes: [Some([2, 1]), Some([2, 2]), None, None],
         },
-    ];
-    assert_eq!(collect_completed_connections(&map), expected);
+    ]
+    .iter()
+    .collect();
+    let result = collect_completed_connections(&map);
+    let actual: HashSet<&ConnectionInfo> = result.iter().collect();
+    assert_eq!(actual, expected);
 }
