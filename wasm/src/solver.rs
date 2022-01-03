@@ -1014,15 +1014,15 @@ fn test_sichuan_solver_rollback() {
 
     let map2: TileMap = arr2(&[
         [Some(0), Some(1), None, Some(0)],
-        [Some(1), Some(1), Some(2), Some(3)],
-        [Some(2), Some(3), Some(0), None],
-        [None, Some(0), Some(1), None],
+        [Some(1), Some(1), Some(2), Some(4)],
+        [Some(2), Some(3), Some(0), Some(3)],
+        [None, Some(0), Some(1), Some(4)],
     ]);
     /*
      * 0 1 x 0
-     * 1 1 2 3
-     * 2 3 0 x
-     * x 0 1 x
+     * 1 1 2 4
+     * 2 3 0 3
+     * x 0 1 4
      */
     let mut solver2 = SichuanSolver::new(&map2);
     solver2.logically_interpolate_connection();
@@ -1062,4 +1062,64 @@ fn test_sichuan_solver_rollback() {
     solver2.logically_interpolate_connection();
     solver2.set_available_connections();
     assert_eq!(solver2.is_completed(), true);
+}
+
+#[test]
+fn test_sichuan_solver_next() {
+    use ndarray::arr2;
+    let map: TileMap = arr2(&[
+        [Some(0), Some(1), None, Some(0)],
+        [Some(1), Some(1), Some(2), Some(4)],
+        [Some(2), Some(3), Some(0), Some(3)],
+        [None, Some(0), Some(1), Some(4)],
+    ]);
+    /*
+     * 0 1 x 0
+     * 1 1 2 4
+     * 2 3 0 3
+     * x 0 1 4
+     */
+
+    let mut solver = SichuanSolver::new(&map);
+    solver.logically_interpolate_connection();
+    solver.set_available_connections();
+    let result1 = solver.next();
+    assert_eq!(result1, None);
+    assert_eq!(solver.map_log.len(), 2);
+    assert_eq!(solver.index_log.len(), 1);
+    assert_eq!(solver.confirmed_connections.len(), 2);
+    assert_eq!(solver.available_connections.len(), 2);
+    assert_eq!(solver.assumed_connections.len(), 1);
+    assert_eq!(solver.should_resume_index(), false);
+
+    let result2 = solver.next();
+    assert_eq!(
+        result2,
+        Some(Err(SichuanSolverRollbackReason::ValidationFailed))
+    );
+    solver.rollback(result2.unwrap().unwrap_err());
+    assert_eq!(solver.map_log.len(), 2);
+    assert_eq!(solver.index_log.len(), 2);
+    assert_eq!(solver.confirmed_connections.len(), 2);
+    assert_eq!(solver.available_connections.len(), 2);
+    assert_eq!(solver.assumed_connections.len(), 1);
+    assert_eq!(solver.should_resume_index(), true);
+    assert_eq!(&solver.current, solver.map_log.last().unwrap());
+
+    let result3 = solver.next();
+    assert_eq!(
+        result3,
+        Some(Err(SichuanSolverRollbackReason::AssumeIndexOutOfRange))
+    );
+    solver.rollback(result3.unwrap().unwrap_err());
+    assert_eq!(solver.map_log.len(), 1);
+    assert_eq!(solver.index_log.len(), 1);
+    assert_eq!(solver.confirmed_connections.len(), 1);
+    assert_eq!(solver.available_connections.len(), 1);
+    assert_eq!(solver.assumed_connections.len(), 0);
+    assert_eq!(solver.should_resume_index(), true);
+    assert_eq!(&solver.current, solver.map_log.last().unwrap());
+
+    let result4 = solver.next();
+    assert_eq!(result4, Some(Ok(())));
 }
