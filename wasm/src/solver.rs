@@ -1,4 +1,4 @@
-use super::components::{Coord, Nodes, SichuanError, Tile, TileMap};
+use super::components::{Coord, Nodes, Tile, TileMap};
 use super::connect::find_connection;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
@@ -183,6 +183,13 @@ struct SichuanSolver {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum SichuanSolverStatus {
+    NoAnswerFound,
+    InProgress,
+    AnswerFound,
+}
+
+#[derive(Debug, PartialEq)]
 enum SichuanSolverRollbackReason {
     AssumeIndexOutOfRange,
     LogicalInterpolationFailed,
@@ -281,7 +288,7 @@ impl SichuanSolver {
         None
     }
 
-    fn rollback(&mut self, reason: SichuanSolverRollbackReason) -> Option<SichuanError> {
+    fn rollback(&mut self, reason: SichuanSolverRollbackReason) -> Option<SichuanSolverStatus> {
         match reason {
             SichuanSolverRollbackReason::AssumeIndexOutOfRange => match self.map_log.pop() {
                 Some(_) => {
@@ -291,7 +298,7 @@ impl SichuanSolver {
                     self.available_connections.pop();
                     self.confirmed_connections.pop();
                 }
-                None => return Some(SichuanError::NoAnswerFound),
+                None => return Some(SichuanSolverStatus::NoAnswerFound),
             },
             SichuanSolverRollbackReason::LogicalInterpolationFailed => {
                 self.current = self.map_log.last().unwrap().clone();
@@ -303,32 +310,66 @@ impl SichuanSolver {
                     self.available_connections.pop();
                     self.confirmed_connections.pop();
                 }
-                _ => return Some(SichuanError::NoAnswerFound),
+                _ => return Some(SichuanSolverStatus::NoAnswerFound),
             },
         }
 
         None
     }
 
-    fn next(&mut self) -> Option<Result<(), SichuanSolverRollbackReason>> {
+    fn next(&mut self) -> SichuanSolverStatus {
         if let Some(err) = self.assume_connection() {
-            return Some(Err(err));
+            return match self.rollback(err) {
+                None => SichuanSolverStatus::InProgress,
+                Some(status) => status,
+            };
         }
 
         if let Some(err) = self.logically_interpolate_connection() {
-            return Some(Err(err));
+            return match self.rollback(err) {
+                None => SichuanSolverStatus::InProgress,
+                Some(status) => status,
+            };
         }
 
         if self.is_completed() {
-            return Some(Ok(()));
+            return SichuanSolverStatus::AnswerFound;
         }
 
         self.set_available_connections();
         if let Some(err) = self.validate_current_map() {
-            return Some(Err(err));
+            return match self.rollback(err) {
+                None => SichuanSolverStatus::InProgress,
+                Some(status) => status,
+            };
         }
 
-        None
+        SichuanSolverStatus::InProgress
+    }
+
+    fn get_connections(&self) -> Vec<ConnectionInfo> {
+        let mut interpolated = self.confirmed_connections.clone();
+        let last = interpolated.pop();
+        for (int_conns, asm_conn) in interpolated.iter_mut().zip(&self.assumed_connections) {
+            int_conns.push(asm_conn.clone());
+        }
+        interpolated.push(last.unwrap());
+        interpolated.into_iter().flatten().collect()
+    }
+
+    pub fn solve(&mut self) -> Result<Vec<ConnectionInfo>, SichuanSolverStatus> {
+        self.logically_interpolate_connection();
+        self.set_available_connections();
+
+        loop {
+            match self.next() {
+                SichuanSolverStatus::AnswerFound => return Ok(self.get_connections()),
+                SichuanSolverStatus::NoAnswerFound => {
+                    return Err(SichuanSolverStatus::NoAnswerFound)
+                }
+                _ => (),
+            }
+        }
     }
 }
 
@@ -795,7 +836,7 @@ fn test_sichuan_solver_is_completed() {
     let mut solver2 = SichuanSolver::new(&map2);
     assert_eq!(solver2.is_completed(), false);
 
-    solver.logically_interpolate_connection();
+    solver2.logically_interpolate_connection();
     assert_eq!(solver2.is_completed(), false);
 }
 
@@ -1084,7 +1125,7 @@ fn test_sichuan_solver_next() {
     solver.logically_interpolate_connection();
     solver.set_available_connections();
     let result1 = solver.next();
-    assert_eq!(result1, None);
+    assert_eq!(result1, SichuanSolverStatus::InProgress);
     assert_eq!(solver.map_log.len(), 2);
     assert_eq!(solver.index_log.len(), 1);
     assert_eq!(solver.confirmed_connections.len(), 2);
@@ -1093,11 +1134,7 @@ fn test_sichuan_solver_next() {
     assert_eq!(solver.should_resume_index(), false);
 
     let result2 = solver.next();
-    assert_eq!(
-        result2,
-        Some(Err(SichuanSolverRollbackReason::ValidationFailed))
-    );
-    solver.rollback(result2.unwrap().unwrap_err());
+    assert_eq!(result2, SichuanSolverStatus::InProgress);
     assert_eq!(solver.map_log.len(), 2);
     assert_eq!(solver.index_log.len(), 2);
     assert_eq!(solver.confirmed_connections.len(), 2);
@@ -1107,11 +1144,7 @@ fn test_sichuan_solver_next() {
     assert_eq!(&solver.current, solver.map_log.last().unwrap());
 
     let result3 = solver.next();
-    assert_eq!(
-        result3,
-        Some(Err(SichuanSolverRollbackReason::AssumeIndexOutOfRange))
-    );
-    solver.rollback(result3.unwrap().unwrap_err());
+    assert_eq!(result3, SichuanSolverStatus::InProgress);
     assert_eq!(solver.map_log.len(), 1);
     assert_eq!(solver.index_log.len(), 1);
     assert_eq!(solver.confirmed_connections.len(), 1);
@@ -1121,5 +1154,27 @@ fn test_sichuan_solver_next() {
     assert_eq!(&solver.current, solver.map_log.last().unwrap());
 
     let result4 = solver.next();
-    assert_eq!(result4, Some(Ok(())));
+    assert_eq!(result4, SichuanSolverStatus::AnswerFound);
+}
+
+#[test]
+fn test_sichuan_solver_solve() {
+    use ndarray::{arr2, Array2};
+    let map: TileMap = arr2(&[
+        [Some(0), Some(1), None, Some(0)],
+        [Some(1), Some(1), Some(2), Some(4)],
+        [Some(2), Some(3), Some(0), Some(3)],
+        [None, Some(0), Some(1), Some(4)],
+    ]);
+    /*
+     * 0 1 x 0
+     * 1 1 2 4
+     * 2 3 0 3
+     * x 0 1 4
+     */
+
+    let mut solver = SichuanSolver::new(&map);
+    let result = solver.solve();
+    assert_eq!(result.unwrap().len(), 7);
+    assert_eq!(solver.current, Array2::from_elem((4, 4), None));
 }

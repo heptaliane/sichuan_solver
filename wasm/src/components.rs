@@ -8,8 +8,3 @@ pub type TypedCoord = [TypedCoordElement; 2];
 pub type Grid = [Coord; 2];
 pub type Nodes = [Option<Coord>; 4];
 pub type TileMap = Array2<Option<Tile>>;
-
-#[derive(Debug)]
-pub enum SichuanError {
-    NoAnswerFound,
-}
