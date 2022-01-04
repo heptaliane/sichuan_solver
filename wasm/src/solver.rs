@@ -4,6 +4,7 @@ use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
+
 #[derive(Eq, PartialEq, Debug, Clone, Hash)]
 struct ConnectionInfo {
     tile: Tile,
@@ -173,7 +174,7 @@ fn collect_completed_connections(map: &TileMap) -> Vec<ConnectionInfo> {
 }
 
 #[derive(Debug)]
-struct SichuanSolver {
+pub struct SichuanSolver {
     current: TileMap,
     index_log: Vec<usize>,
     map_log: Vec<TileMap>,
