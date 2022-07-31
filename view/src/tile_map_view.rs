@@ -3,6 +3,8 @@ use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, MouseEvent};
 use yew::prelude::*;
 use yew::{NodeRef, Properties};
 
+use super::icon::tile::MahjongTileImage;
+
 const DEFAULT_TILE_WIDTH: usize = 100;
 const DEFAULT_TILE_HEIGHT: usize = 100;
 const DEFAULT_MAP_ROWS: usize = 5;
@@ -17,6 +19,7 @@ pub enum TileMapViewMsg {
 }
 
 pub struct TileMapViewModel {
+    tiles: MahjongTileImage,
     canvas: NodeRef,
     height: usize,
     width: usize,
@@ -37,6 +40,7 @@ impl Component for TileMapViewModel {
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
+            tiles: MahjongTileImage::new(),
             canvas: NodeRef::default(),
             height: DEFAULT_TILE_HEIGHT,
             width: DEFAULT_TILE_WIDTH,
