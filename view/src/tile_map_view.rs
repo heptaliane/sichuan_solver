@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, MouseEvent};
+use yew::callback::Callback;
 use yew::prelude::*;
 use yew::{NodeRef, Properties};
 
@@ -10,6 +11,7 @@ const DEFAULT_TILE_WIDTH: usize = 80;
 const DEFAULT_TILE_HEIGHT: usize = 100;
 const DEFAULT_MAP_ROWS: usize = 5;
 const DEFAULT_MAP_COLS: usize = 5;
+const DEFAULT_ACTIVE_CELLS: Vec<[usize; 2]> = vec![];
 const GRID_LINE_WIDTH: usize = 1;
 const GRID_STYLE: &str = "lightgray";
 const ACTIVE_LINE_STYLE: &str = "red";
@@ -25,7 +27,6 @@ pub struct TileMapViewModel {
     canvas: NodeRef,
     height: usize,
     width: usize,
-    active: Option<[usize; 2]>,
 }
 
 #[derive(Properties, PartialEq)]
@@ -34,7 +35,11 @@ pub struct TileMapViewProps {
     pub rows: usize,
     #[prop_or(DEFAULT_MAP_COLS)]
     pub cols: usize,
-    pub tile_map: HashMap<(usize, usize), usize>,
+    #[prop_or(DEFAULT_ACTIVE_CELLS)]
+    pub active: Vec<[usize; 2]>,
+
+    pub tile_map: HashMap<[usize; 2], usize>,
+    pub onclick: Callback<[usize; 2]>,
 }
 
 impl Component for TileMapViewModel {
@@ -47,21 +52,13 @@ impl Component for TileMapViewModel {
             canvas: NodeRef::default(),
             height: DEFAULT_TILE_HEIGHT,
             width: DEFAULT_TILE_WIDTH,
-            active: None,
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             TileMapViewMsg::TileClicked([x, y]) => {
-                let i: usize = self.xpos(x);
-                let j: usize = self.ypos(y);
-                match self.active {
-                    Some([current_i, current_j]) if current_i == i && current_j == j => {
-                        self.active = None
-                    }
-                    _ => self.active = Some([i, j]),
-                }
+                ctx.props().onclick.emit([self.xpos(x), self.ypos(y)]);
                 true
             }
         }
@@ -85,9 +82,8 @@ impl Component for TileMapViewModel {
     fn rendered(&mut self, ctx: &Context<Self>, _first_rendered: bool) {
         self.clear_canvas(ctx);
         self.draw_grids(ctx);
-        match self.active {
-            Some([x, y]) => self.draw_active_tile(x as usize, y as usize),
-            _ => (),
+        for &[x, y] in &ctx.props().active {
+            self.draw_active_tile(x, y);
         }
         self.draw_tile_images(ctx);
     }
@@ -169,7 +165,7 @@ impl TileMapViewModel {
         let (w, h) = (self.width as f64, self.height as f64);
         let context = self.canvas_context();
 
-        for (&(i, j), &idx) in &ctx.props().tile_map {
+        for (&[i, j], &idx) in &ctx.props().tile_map {
             let result = context.draw_image_with_html_image_element_and_dw_and_dh(
                 self.image_data.get_ref(idx),
                 self.tile_left(i),
