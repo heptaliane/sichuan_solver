@@ -6,17 +6,14 @@ use yew::prelude::*;
 use yew::{NodeRef, Properties};
 
 use super::icon::tile::MahjongTileImage;
+use super::styles::{HighlightStyle, TileHighlightStyle};
 
 const DEFAULT_TILE_WIDTH: usize = 80;
 const DEFAULT_TILE_HEIGHT: usize = 100;
 const DEFAULT_MAP_ROWS: usize = 5;
 const DEFAULT_MAP_COLS: usize = 5;
-const DEFAULT_ACTIVE_CELLS: Vec<[usize; 2]> = vec![];
 const GRID_LINE_WIDTH: usize = 1;
 const GRID_STYLE: &str = "lightgray";
-const ACTIVE_LINE_STYLE: &str = "red";
-const ACTIVE_LINE_WIDTH: usize = 3;
-const ACTIVE_BG_COLOR: &str = "lightyellow";
 
 pub enum TileMapViewMsg {
     TileClicked([i32; 2]),
@@ -35,10 +32,11 @@ pub struct TileMapViewProps {
     pub rows: usize,
     #[prop_or(DEFAULT_MAP_COLS)]
     pub cols: usize,
-    #[prop_or(DEFAULT_ACTIVE_CELLS)]
-    pub active: Vec<[usize; 2]>,
-
+    #[prop_or(HashMap::new())]
+    pub active: HashMap<[usize; 2], TileHighlightStyle>,
+    #[prop_or(HashMap::new())]
     pub tile_map: HashMap<[usize; 2], usize>,
+
     pub onclick: Callback<[usize; 2]>,
 }
 
@@ -82,8 +80,8 @@ impl Component for TileMapViewModel {
     fn rendered(&mut self, ctx: &Context<Self>, _first_rendered: bool) {
         self.clear_canvas(ctx);
         self.draw_grids(ctx);
-        for &[x, y] in &ctx.props().active {
-            self.draw_active_tile(x, y);
+        for (&[x, y], style) in &ctx.props().active {
+            self.highlight_tile(x, y, style.value());
         }
         self.draw_tile_images(ctx);
     }
@@ -149,15 +147,15 @@ impl TileMapViewModel {
         }
     }
 
-    fn draw_active_tile(&self, x: usize, y: usize) {
+    fn highlight_tile(&self, x: usize, y: usize, style: HighlightStyle) {
         let (w, h) = (self.width as f64, self.height as f64);
         let context = self.canvas_context();
 
-        context.set_fill_style(&JsValue::from_str(ACTIVE_BG_COLOR));
+        context.set_fill_style(&JsValue::from_str(style.bg_color));
         context.fill_rect(self.tile_left(x), self.tile_top(y), w, h);
 
-        context.set_stroke_style(&JsValue::from_str(ACTIVE_LINE_STYLE));
-        context.set_line_width(ACTIVE_LINE_WIDTH as f64);
+        context.set_stroke_style(&JsValue::from_str(style.fg_color));
+        context.set_line_width(style.line_width);
         context.stroke_rect(self.tile_left(x), self.tile_top(y), w, h);
     }
 
