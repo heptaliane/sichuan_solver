@@ -1,6 +1,5 @@
-use gloo_utils::document;
-use wasm_bindgen::JsCast;
-use web_sys::{SvgElement, SvgImageElement};
+use base64;
+use web_sys::HtmlImageElement;
 
 const SVG_ICON_STR: [&str; 34] = [
     include_str!("./svg/1m.svg"),
@@ -39,18 +38,15 @@ const SVG_ICON_STR: [&str; 34] = [
     include_str!("./svg/white.svg"),
 ];
 
-fn create_svg_element(svg_str: &str) -> SvgImageElement {
-    let svg = document()
-        .create_element("svg")
-        .unwrap()
-        .dyn_into::<SvgElement>()
-        .unwrap();
-    svg.set_inner_html(svg_str);
-    svg.dyn_into::<SvgImageElement>().unwrap()
+fn create_svg_element(svg_str: &str) -> HtmlImageElement {
+    let image = HtmlImageElement::new().unwrap();
+    let b64svg = base64::encode(svg_str);
+    image.set_src(&format!("data:image/svg+xml;base64,{}", b64svg));
+    image
 }
 
 pub struct MahjongTileImage {
-    icons: [SvgImageElement; 34],
+    icons: [HtmlImageElement; SVG_ICON_STR.len()],
 }
 
 impl MahjongTileImage {
@@ -60,7 +56,7 @@ impl MahjongTileImage {
         }
     }
 
-    pub fn get_ref(&self, idx: usize) -> &SvgImageElement {
+    pub fn get_ref(&self, idx: usize) -> &HtmlImageElement {
         &self.icons[idx]
     }
 }

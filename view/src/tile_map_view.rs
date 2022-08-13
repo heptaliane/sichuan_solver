@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, MouseEvent};
 use yew::prelude::*;
@@ -19,7 +20,7 @@ pub enum TileMapViewMsg {
 }
 
 pub struct TileMapViewModel {
-    tiles: MahjongTileImage,
+    image_data: MahjongTileImage,
     canvas: NodeRef,
     height: usize,
     width: usize,
@@ -29,9 +30,10 @@ pub struct TileMapViewModel {
 #[derive(Properties, PartialEq)]
 pub struct TileMapViewProps {
     #[prop_or(DEFAULT_MAP_ROWS)]
-    rows: usize,
+    pub rows: usize,
     #[prop_or(DEFAULT_MAP_COLS)]
-    cols: usize,
+    pub cols: usize,
+    pub tile_map: HashMap<(usize, usize), usize>,
 }
 
 impl Component for TileMapViewModel {
@@ -40,7 +42,7 @@ impl Component for TileMapViewModel {
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
-            tiles: MahjongTileImage::new(),
+            image_data: MahjongTileImage::new(),
             canvas: NodeRef::default(),
             height: DEFAULT_TILE_HEIGHT,
             width: DEFAULT_TILE_WIDTH,
@@ -49,7 +51,6 @@ impl Component for TileMapViewModel {
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
-
         match msg {
             TileMapViewMsg::TileClicked([x, y]) => {
                 let i: i32 = (x as f64 / self.width as f64).floor() as i32;
@@ -83,10 +84,11 @@ impl Component for TileMapViewModel {
     fn rendered(&mut self, ctx: &Context<Self>, _first_rendered: bool) {
         self.clear_canvas(ctx);
         self.draw_grids(ctx);
-        match self.active { 
+        match self.active {
             Some([x, y]) => self.draw_active_tile(x, y),
             _ => (),
         }
+        self.draw_tile_images(ctx);
     }
 }
 
@@ -152,5 +154,24 @@ impl TileMapViewModel {
             w as f64,
             h as f64,
         );
+    }
+
+    fn draw_tile_images(&self, ctx: &Context<Self>) {
+        let (w, h) = (self.width, self.height);
+        let context = self.canvas_context();
+
+        for (&(i, j), &idx) in &ctx.props().tile_map {
+            let result = context.draw_image_with_html_image_element_and_dw_and_dh(
+                self.image_data.get_ref(idx),
+                (w as f64) * (i as f64),
+                (h as f64) * (j as f64),
+                w as f64,
+                h as f64,
+            );
+            match result {
+                Err(e) => log::info!("{}", e.as_string().unwrap_or("None".to_string())),
+                _ => (),
+            }
+        }
     }
 }
