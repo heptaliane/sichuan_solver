@@ -1,4 +1,6 @@
 use base64;
+use std::borrow::Borrow;
+use std::rc::Rc;
 use std::slice::Iter;
 use web_sys::HtmlImageElement;
 
@@ -47,28 +49,29 @@ fn create_svg_element(svg_str: &str) -> HtmlImageElement {
 }
 
 pub struct MahjongTileImage {
-    icons: [HtmlImageElement; SVG_ICON_STR.len()],
+    icons: [Rc<HtmlImageElement>; SVG_ICON_STR.len()],
 }
 
 impl MahjongTileImage {
     pub fn new() -> Self {
         Self {
-            icons: SVG_ICON_STR.map(create_svg_element),
+            icons: SVG_ICON_STR.map(|svg| Rc::new(create_svg_element(svg))),
         }
     }
 
-    pub fn get_ref(&self, idx: usize) -> &HtmlImageElement {
+    pub fn get_ref(&self, idx: usize) -> &Rc<HtmlImageElement> {
         &self.icons[idx]
     }
 
-    pub fn resize(&self, width: u32, height: u32) {
-        self.icons.iter().for_each(|img| {
+    pub fn resize(&mut self, width: u32, height: u32) {
+        self.icons.iter().for_each(|img_ref| {
+            let img: &HtmlImageElement = img_ref.borrow();
             img.set_width(width);
             img.set_height(height);
         });
     }
 
-    pub fn iter(&self) -> Iter<HtmlImageElement> {
+    pub fn iter(&self) -> Iter<Rc<HtmlImageElement>> {
         self.icons.iter()
     }
 }

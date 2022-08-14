@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::HashMap;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, MouseEvent};
@@ -165,7 +166,7 @@ impl TileMapViewModel {
 
         for (&[i, j], &idx) in &ctx.props().tile_map {
             let result = context.draw_image_with_html_image_element_and_dw_and_dh(
-                self.image_data.get_ref(idx),
+                self.image_data.get_ref(idx).borrow(),
                 self.tile_left(i),
                 self.tile_top(j),
                 w,

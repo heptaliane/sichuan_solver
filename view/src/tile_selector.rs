@@ -29,7 +29,7 @@ impl Component for TileSelectorModel {
     type Properties = TileSelectorProps;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        let images = MahjongTileImage::new();
+        let mut images = MahjongTileImage::new();
         images.resize(TILE_WIDTH, TILE_HEIGHT);
 
         Self { image_data: images }

@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+use std::rc::Rc;
 use web_sys::{Element, HtmlImageElement, Node};
 use yew::callback::Callback;
 use yew::prelude::*;
@@ -18,7 +20,7 @@ pub struct TileImageButtonProps {
 
     pub id: usize,
 
-    pub image: HtmlImageElement,
+    pub image: Rc<HtmlImageElement>,
 
     pub onclick: Callback<usize>,
 }
@@ -34,7 +36,8 @@ impl Component for TileImageButtonModel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let image: Node = Element::from(ctx.props().image.clone()).into();
+        let image: &HtmlImageElement = ctx.props().image.borrow();
+        let node: Node = Element::from(image.clone()).into();
         let handle_click = ctx.link().callback(|_| Self::Message::TileSelected);
         html! {
             <div
@@ -44,7 +47,7 @@ impl Component for TileImageButtonModel {
                     type="radio"
                     checked={ctx.props().selected}
                 />
-                {Html::VRef(image)}
+                {Html::VRef(node)}
             </div>
         }
     }
