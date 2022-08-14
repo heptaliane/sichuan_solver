@@ -54,8 +54,8 @@ impl Component for TileImageButtonModel {
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        match msg { 
-            Self::Message::TileSelected => { 
+        match msg {
+            Self::Message::TileSelected => {
                 ctx.props().onclick.emit(ctx.props().id);
             }
         }

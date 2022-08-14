@@ -57,9 +57,9 @@ impl Component for TileMapViewModel {
         match msg {
             TileMapViewMsg::TileClicked([x, y]) => {
                 ctx.props().onclick.emit([self.xpos(x), self.ypos(y)]);
-                true
             }
         }
+        false
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {

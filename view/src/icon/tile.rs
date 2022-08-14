@@ -1,4 +1,5 @@
 use base64;
+use std::slice::Iter;
 use web_sys::HtmlImageElement;
 
 const SVG_ICON_STR: [&str; 34] = [
@@ -52,11 +53,22 @@ pub struct MahjongTileImage {
 impl MahjongTileImage {
     pub fn new() -> Self {
         Self {
-            icons: SVG_ICON_STR.map(|svg| create_svg_element(svg)),
+            icons: SVG_ICON_STR.map(create_svg_element),
         }
     }
 
     pub fn get_ref(&self, idx: usize) -> &HtmlImageElement {
         &self.icons[idx]
+    }
+
+    pub fn resize(&self, width: u32, height: u32) {
+        self.icons.iter().for_each(|img| {
+            img.set_width(width);
+            img.set_height(height);
+        });
+    }
+
+    pub fn iter(&self) -> Iter<HtmlImageElement> {
+        self.icons.iter()
     }
 }
