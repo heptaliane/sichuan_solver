@@ -1,5 +1,4 @@
 use base64;
-use std::borrow::Borrow;
 use std::rc::Rc;
 use std::slice::Iter;
 use web_sys::HtmlImageElement;
@@ -59,13 +58,13 @@ impl MahjongTileImage {
         }
     }
 
-    pub fn get_ref(&self, idx: usize) -> &Rc<HtmlImageElement> {
+    pub fn get(&self, idx: usize) -> &Rc<HtmlImageElement> {
         &self.icons[idx]
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
         self.icons.iter().for_each(|img_ref| {
-            let img: &HtmlImageElement = img_ref.borrow();
+            let img: &HtmlImageElement = img_ref.as_ref();
             img.set_width(width);
             img.set_height(height);
         });

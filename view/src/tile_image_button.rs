@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::rc::Rc;
 use web_sys::{Element, HtmlImageElement, Node};
 use yew::callback::Callback;
@@ -36,7 +35,7 @@ impl Component for TileImageButtonModel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let image: &HtmlImageElement = ctx.props().image.borrow();
+        let image: &HtmlImageElement = ctx.props().image.as_ref();
         let node: Node = Element::from(image.clone()).into();
         let handle_click = ctx.link().callback(|_| Self::Message::TileSelected);
         html! {
