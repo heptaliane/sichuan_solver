@@ -81,7 +81,10 @@ impl Component for TileMapViewModel {
         self.clear_canvas(ctx);
         self.draw_grids(ctx);
         for (&[x, y], style) in &ctx.props().active {
-            self.highlight_tile(x, y, style.value());
+            if let Some(style_value) = style.value() { 
+                self.highlight_tile(x, y, style_value);
+            }
+            // self.highlight_tile(x, y, style.value());
         }
         self.draw_tile_images(ctx);
     }
@@ -147,7 +150,7 @@ impl TileMapViewModel {
         }
     }
 
-    fn highlight_tile(&self, x: usize, y: usize, style: ComponentStyle) {
+    fn highlight_tile(&self, x: usize, y: usize, style: &ComponentStyle) {
         let (w, h) = (self.width as f64, self.height as f64);
         let context = self.canvas_context();
 
