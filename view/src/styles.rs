@@ -7,13 +7,11 @@ const ACTIVE_TILE_HIGHLIGHT_STYLE_PROPS: [(&'static str, &'static str); 3] = [
     ("bg_color", "lightyellow"),
     ("line_width", "3"),
 ];
-pub static ACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 const INACTIVE_TILE_HIGHLIGHT_STYLE_PROPS: [(&'static str, &'static str); 3] = [
     ("fg_color", "gray"),
     ("bg_color", "lightgray"),
     ("line_width", "1"),
 ];
-pub static INACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 const TILE_IMAGE_BUTTON_STYLE_PROPS: [(&'static str, &'static str); 5] = [
     ("color", "black"),
     ("background-color", "white"),
@@ -21,15 +19,30 @@ const TILE_IMAGE_BUTTON_STYLE_PROPS: [(&'static str, &'static str); 5] = [
     ("border-radius", "5px"),
     ("margin", "auto"),
 ];
-pub static TILE_IMAGE_BUTTON_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 const TILE_IMAGE_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 3] = [
     ("padding", "5px"),
     ("margin", "auto"),
     ("text-align", "center"),
 ];
-pub static TILE_IMAGE_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 const TILE_IMAGE_BUTTON_RADIO_STYLE_PROPS: [(&'static str, &'static str); 1] = [("padding", "3px")];
+const TILE_SELECTOR_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 9] = [
+    ("color", "#6200EE"),
+    ("background", "white"),
+    ("border", "solid 3px"),
+    ("border-radius", "20px"),
+    ("box-shadow", "10px 5px 5px gray"),
+    ("display", "grid"),
+    ("grid-template-columns", "repeat(9, 1fr)"),
+    ("margin", "auto"),
+    ("padding", "20px"),
+];
+
+pub static ACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static INACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static TILE_IMAGE_BUTTON_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static TILE_IMAGE_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static TILE_IMAGE_BUTTON_RADIO_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static TILE_SELECTOR_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ComponentStyle {
@@ -92,6 +105,10 @@ pub fn init() {
             &TILE_IMAGE_BUTTON_RADIO_STYLE,
             TILE_IMAGE_BUTTON_RADIO_STYLE_PROPS.to_vec(),
         ),
+        (
+            &TILE_SELECTOR_CONTAINER_STYLE,
+            TILE_SELECTOR_CONTAINER_STYLE_PROPS.to_vec(),
+        )
     ]
     .iter()
     .for_each(|(cell, props)| {

@@ -4,10 +4,10 @@ use yew::Properties;
 
 use super::icon::tile::MahjongTileImage;
 use super::tile_image_button::TileImageButtonModel;
+use super::styles;
 
 const TILE_WIDTH: u32 = 40;
 const TILE_HEIGHT: u32 = 50;
-const N_COLUMNS: usize = 9;
 
 pub enum TileSelectorMsg {
     TileSelected(usize),
@@ -48,7 +48,7 @@ impl Component for TileSelectorModel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let selected = ctx.props().selected;
         html! {
-            <div style={format!("display: grid;grid-template-columns: repeat({}, 1fr)", N_COLUMNS)}>
+            <div class={styles::TILE_SELECTOR_CONTAINER_STYLE.get().unwrap().css()}>
                 {self.image_data.iter().enumerate().map(|(i, img)| {
                     html! {
                         <TileImageButtonModel
