@@ -46,7 +46,9 @@ impl Component for TileImageButtonModel {
                     type="radio"
                     checked={ctx.props().selected}
                 />
-                {Html::VRef(node)}
+                <div style="border: solid">
+                    {Html::VRef(node)}
+                </div>
             </div>
         }
     }

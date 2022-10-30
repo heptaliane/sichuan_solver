@@ -6,7 +6,7 @@ use yew::prelude::*;
 use yew::{NodeRef, Properties};
 
 use super::icon::tile::MahjongTileImage;
-use super::styles::{HighlightStyle, TileHighlightStyle};
+use super::styles::{ComponentStyle, TileHighlightStyle};
 
 const DEFAULT_TILE_WIDTH: usize = 80;
 const DEFAULT_TILE_HEIGHT: usize = 100;
@@ -147,15 +147,15 @@ impl TileMapViewModel {
         }
     }
 
-    fn highlight_tile(&self, x: usize, y: usize, style: HighlightStyle) {
+    fn highlight_tile(&self, x: usize, y: usize, style: ComponentStyle) {
         let (w, h) = (self.width as f64, self.height as f64);
         let context = self.canvas_context();
 
-        context.set_fill_style(&JsValue::from_str(style.bg_color));
+        context.set_fill_style(&JsValue::from_str(style.props["bg_color"]));
         context.fill_rect(self.tile_left(x), self.tile_top(y), w, h);
 
-        context.set_stroke_style(&JsValue::from_str(style.fg_color));
-        context.set_line_width(style.line_width);
+        context.set_stroke_style(&JsValue::from_str(style.props["fg_color"]));
+        context.set_line_width(style.props["line_width"].parse().unwrap());
         context.stroke_rect(self.tile_left(x), self.tile_top(y), w, h);
     }
 
