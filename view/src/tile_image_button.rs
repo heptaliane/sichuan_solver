@@ -4,6 +4,8 @@ use yew::callback::Callback;
 use yew::prelude::*;
 use yew::Properties;
 
+use super::styles::TILE_IMAGE_BUTTON_STYLE;
+
 pub enum TileImageButtonMsg {
     TileSelected,
 }
@@ -46,7 +48,7 @@ impl Component for TileImageButtonModel {
                     type="radio"
                     checked={ctx.props().selected}
                 />
-                <div style="border: solid">
+                <div class={TILE_IMAGE_BUTTON_STYLE.get().unwrap().css()}>
                     {Html::VRef(node)}
                 </div>
             </div>

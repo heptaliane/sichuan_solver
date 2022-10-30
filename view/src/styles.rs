@@ -7,13 +7,13 @@ const ACTIVE_TILE_HIGHLIGHT_STYLE_PROPS: [(&'static str, &'static str); 3] = [
     ("bg_color", "lightyellow"),
     ("line_width", "3"),
 ];
-static ACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static ACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 const INACTIVE_TILE_HIGHLIGHT_STYLE_PROPS: [(&'static str, &'static str); 3] = [
     ("fg_color", "gray"),
     ("bg_color", "lightgray"),
     ("line_width", "1"),
 ];
-static INACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static INACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 const TILE_IMAGE_BUTTON_STYLE_PROPS: [(&'static str, &'static str); 5] = [
     ("color", "black"),
     ("background-color", "white"),
@@ -21,7 +21,7 @@ const TILE_IMAGE_BUTTON_STYLE_PROPS: [(&'static str, &'static str); 5] = [
     ("padding", "5px"),
     ("radius", "5px"),
 ];
-static TILE_IMAGE_BUTTON_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static TILE_IMAGE_BUTTON_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ComponentStyle {
@@ -33,9 +33,9 @@ impl ComponentStyle {
         let css_str: String = self
             .props
             .iter()
-            .map(|(k, v)| format!("{}: {}", k, v))
+            .map(|(k, v)| format!("{}: {};", k, v))
             .collect::<Vec<String>>()
-            .join(";");
+            .join("");
         Style::new(css_str).expect("Invalid CSS")
     }
 }
