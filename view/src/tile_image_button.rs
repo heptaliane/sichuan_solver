@@ -4,7 +4,7 @@ use yew::callback::Callback;
 use yew::prelude::*;
 use yew::Properties;
 
-use super::styles::TILE_IMAGE_BUTTON_STYLE;
+use super::styles;
 
 pub enum TileImageButtonMsg {
     TileSelected,
@@ -42,13 +42,15 @@ impl Component for TileImageButtonModel {
         let handle_click = ctx.link().callback(|_| Self::Message::TileSelected);
         html! {
             <div
+                class={styles::TILE_IMAGE_CONTAINER_STYLE.get().unwrap().css()}
                 onclick={handle_click}
             >
                 <input
                     type="radio"
+                    class={styles::TILE_IMAGE_BUTTON_RADIO_STYLE.get().unwrap().css()}
                     checked={ctx.props().selected}
                 />
-                <div class={TILE_IMAGE_BUTTON_STYLE.get().unwrap().css()}>
+                <div class={styles::TILE_IMAGE_BUTTON_STYLE.get().unwrap().css()}>
                     {Html::VRef(node)}
                 </div>
             </div>

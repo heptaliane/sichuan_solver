@@ -18,10 +18,18 @@ const TILE_IMAGE_BUTTON_STYLE_PROPS: [(&'static str, &'static str); 5] = [
     ("color", "black"),
     ("background-color", "white"),
     ("border", "solid 1px"),
-    ("padding", "5px"),
-    ("radius", "5px"),
+    ("border-radius", "5px"),
+    ("margin", "auto"),
 ];
 pub static TILE_IMAGE_BUTTON_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+const TILE_IMAGE_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 3] = [
+    ("padding", "5px"),
+    ("margin", "auto"),
+    ("text-align", "center"),
+];
+pub static TILE_IMAGE_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+const TILE_IMAGE_BUTTON_RADIO_STYLE_PROPS: [(&'static str, &'static str); 1] = [("padding", "3px")];
+pub static TILE_IMAGE_BUTTON_RADIO_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ComponentStyle {
@@ -76,11 +84,19 @@ pub fn init() {
             &TILE_IMAGE_BUTTON_STYLE,
             TILE_IMAGE_BUTTON_STYLE_PROPS.to_vec(),
         ),
+        (
+            &TILE_IMAGE_CONTAINER_STYLE,
+            TILE_IMAGE_CONTAINER_STYLE_PROPS.to_vec(),
+        ),
+        (
+            &TILE_IMAGE_BUTTON_RADIO_STYLE,
+            TILE_IMAGE_BUTTON_RADIO_STYLE_PROPS.to_vec(),
+        ),
     ]
     .iter()
     .for_each(|(cell, props)| {
         let result = cell.set(ComponentStyle {
-            props: HashMap::from_iter(props.clone().into_iter())
+            props: HashMap::from_iter(props.clone().into_iter()),
         });
 
         match result {
