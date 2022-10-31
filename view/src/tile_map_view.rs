@@ -84,7 +84,6 @@ impl Component for TileMapViewModel {
             if let Some(style_value) = style.value() { 
                 self.highlight_tile(x, y, style_value);
             }
-            // self.highlight_tile(x, y, style.value());
         }
         self.draw_tile_images(ctx);
     }

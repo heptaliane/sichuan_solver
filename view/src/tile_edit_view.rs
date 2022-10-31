@@ -1,31 +1,34 @@
 use std::collections::HashMap;
+use web_sys::HtmlInputElement;
 use yew::callback::Callback;
 use yew::prelude::*;
-use yew::Properties;
+use yew::{NodeRef, Properties};
 
-use super::styles::TileHighlightStyle;
-use super::tile_map_view::{TileMapViewModel, TileMapViewProps};
-use super::tile_selector::{TileSelectorModel, TileSelectorProps};
+use super::styles;
+use super::tile_map_view::TileMapViewModel;
+use super::tile_selector::TileSelectorModel;
 
 const DEFAULT_MAP_ROWS: usize = 5;
 const DEFAULT_MAP_COLS: usize = 5;
+const MIN_MAP_SIZE: usize = 1;
+const MAP_BORDER: &str = "solid 3px #6200EE";
+const SELECTOR_BORDER: &str = "solid 3px #6200EE";
 
 pub enum TileEditViewMsg {
     TileClicked([usize; 2]),
     TileSelected(usize),
+    MapSizeChanged,
 }
 
 pub struct TileEditViewModel {
-    active: HashMap<[usize; 2], TileHighlightStyle>,
+    row_ref: NodeRef,
+    col_ref: NodeRef,
+    active: HashMap<[usize; 2], styles::TileHighlightStyle>,
     selected: Option<usize>,
 }
 
 #[derive(Properties, PartialEq)]
 pub struct TileEditViewProps {
-    #[prop_or(DEFAULT_MAP_ROWS)]
-    pub rows: usize,
-    #[prop_or(DEFAULT_MAP_COLS)]
-    pub cols: usize,
     #[prop_or(HashMap::new())]
     pub tile_map: HashMap<[usize; 2], usize>,
 
@@ -38,6 +41,8 @@ impl Component for TileEditViewModel {
 
     fn create(_ctx: &Context<Self>) -> Self {
         Self {
+            row_ref: NodeRef::default(),
+            col_ref: NodeRef::default(),
             active: HashMap::new(),
             selected: None,
         }
@@ -46,7 +51,7 @@ impl Component for TileEditViewModel {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Self::Message::TileClicked(coord) => {
-                self.active = HashMap::from([(coord, TileHighlightStyle::ACTIVE)]);
+                self.active = HashMap::from([(coord, styles::TileHighlightStyle::ACTIVE)]);
                 ctx.props().onupdate.emit((coord, self.selected));
             }
             Self::Message::TileSelected(idx) => {
@@ -54,6 +59,10 @@ impl Component for TileEditViewModel {
                     Some(current) if idx == current => None,
                     _ => Some(idx),
                 };
+                self.active = HashMap::new();
+                return true;
+            }
+            Self::Message::MapSizeChanged => {
                 return true;
             }
         }
@@ -68,22 +77,97 @@ impl Component for TileEditViewModel {
         let onselect = ctx
             .link()
             .callback(|idx: usize| TileEditViewMsg::TileSelected(idx));
+        let onresize = ctx.link().callback(|_| TileEditViewMsg::MapSizeChanged);
+
         html! {
             <div>
-                <TileMapViewModel
-                    rows={props.rows}
-                    cols={props.cols}
-                    active={self.active.clone()}
-                    tile_map={props.tile_map.clone()}
-                    onclick={onclick}
+                <div
+                    class={
+                        styles::PANEL_CONTAINER_STYLE
+                            .get()
+                            .unwrap()
+                            .css(Some(HashMap::from([("border", MAP_BORDER)])))
+                    }
                 >
-                </TileMapViewModel>
-                <TileSelectorModel
-                    selected={self.selected}
-                    onclick={onselect}
+                    <TileMapViewModel
+                        rows={self.row()}
+                        cols={self.col()}
+                        active={self.active.clone()}
+                        tile_map={props.tile_map.clone()}
+                        onclick={onclick}
+                    >
+                    </TileMapViewModel>
+                </div>
+                <div
+                    class={
+                        styles::PANEL_CONTAINER_STYLE
+                            .get()
+                            .unwrap()
+                            .css(Some(HashMap::from([("border", SELECTOR_BORDER)])))
+                    }
                 >
-                </TileSelectorModel>
+                    <div>
+                        <div>
+                            <label>{"Rows: "}</label>
+                            <input
+                                type="number"
+                                ref={&self.row_ref}
+                                min={MIN_MAP_SIZE.to_string()}
+                                oninput={onresize.clone()}
+                            />
+                        </div>
+                        <div>
+                            <label>{"Cols: "}</label>
+                            <input
+                                type="number"
+                                ref={&self.col_ref}
+                                min={MIN_MAP_SIZE.to_string()}
+                                oninput={onresize.clone()}
+                            />
+                        </div>
+                    </div>
+                    <TileSelectorModel
+                        selected={self.selected}
+                        onclick={onselect}
+                    >
+                    </TileSelectorModel>
+                </div>
             </div>
+        }
+    }
+
+    fn rendered(&mut self, _ctx: &Context<Self>, first_rendered: bool) {
+        if first_rendered {
+            self.set_row(DEFAULT_MAP_ROWS);
+            self.set_col(DEFAULT_MAP_COLS);
+        }
+    }
+}
+
+impl TileEditViewModel {
+    fn row(&self) -> usize {
+        match self.row_ref.cast::<HtmlInputElement>() {
+            Some(row) => row.value().parse().unwrap(),
+            _ => DEFAULT_MAP_ROWS,
+        }
+    }
+
+    pub fn set_row(&self, size: usize) {
+        if let Some(row) = self.row_ref.cast::<HtmlInputElement>() {
+            row.set_value(&size.to_string());
+        }
+    }
+
+    fn col(&self) -> usize {
+        match self.col_ref.cast::<HtmlInputElement>() {
+            Some(col) => col.value().parse().unwrap(),
+            _ => DEFAULT_MAP_ROWS,
+        }
+    }
+
+    pub fn set_col(&self, size: usize) {
+        if let Some(col) = self.col_ref.cast::<HtmlInputElement>() {
+            col.set_value(&size.to_string());
         }
     }
 }

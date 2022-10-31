@@ -25,14 +25,14 @@ const TILE_IMAGE_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 3] = [
     ("text-align", "center"),
 ];
 const TILE_IMAGE_BUTTON_RADIO_STYLE_PROPS: [(&'static str, &'static str); 1] = [("padding", "3px")];
-const TILE_SELECTOR_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 9] = [
-    ("color", "#6200EE"),
-    ("background", "white"),
-    ("border", "solid 3px"),
-    ("border-radius", "20px"),
-    ("box-shadow", "10px 5px 5px gray"),
+const TILE_SELECTOR_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 2] = [
     ("display", "grid"),
     ("grid-template-columns", "repeat(9, 1fr)"),
+];
+const PANEL_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 5] = [
+    ("background", "white"),
+    ("border-radius", "20px"),
+    ("box-shadow", "10px 5px 5px gray"),
     ("margin", "auto"),
     ("padding", "20px"),
 ];
@@ -43,6 +43,7 @@ pub static TILE_IMAGE_BUTTON_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static TILE_IMAGE_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static TILE_IMAGE_BUTTON_RADIO_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static TILE_SELECTOR_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static PANEL_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ComponentStyle {
@@ -50,14 +51,24 @@ pub struct ComponentStyle {
 }
 
 impl ComponentStyle {
-    pub fn css(&self) -> Style {
-        let css_str: String = self
-            .props
+    pub fn css(&self, extras: Option<HashMap<&str, &str>>) -> Style {
+        let css_str = self.create_css_str(&self.props);
+
+        match extras {
+            Some(props) => {
+                let extra_css = self.create_css_str(&props);
+                Style::new([css_str, extra_css].join(""))
+            }
+            None => Style::new(css_str),
+        }.expect("Invalid CSS")
+    }
+
+    fn create_css_str(&self, props: &HashMap<&str, &str>) -> String {
+        props
             .iter()
             .map(|(k, v)| format!("{}: {};", k, v))
             .collect::<Vec<String>>()
-            .join("");
-        Style::new(css_str).expect("Invalid CSS")
+            .join("")
     }
 }
 
@@ -108,7 +119,8 @@ pub fn init() {
         (
             &TILE_SELECTOR_CONTAINER_STYLE,
             TILE_SELECTOR_CONTAINER_STYLE_PROPS.to_vec(),
-        )
+        ),
+        (&PANEL_CONTAINER_STYLE, PANEL_CONTAINER_STYLE_PROPS.to_vec()),
     ]
     .iter()
     .for_each(|(cell, props)| {

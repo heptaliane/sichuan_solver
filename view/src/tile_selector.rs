@@ -48,7 +48,7 @@ impl Component for TileSelectorModel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let selected = ctx.props().selected;
         html! {
-            <div class={styles::TILE_SELECTOR_CONTAINER_STYLE.get().unwrap().css()}>
+            <div class={styles::TILE_SELECTOR_CONTAINER_STYLE.get().unwrap().css(None)}>
                 {self.image_data.iter().enumerate().map(|(i, img)| {
                     html! {
                         <TileImageButtonModel

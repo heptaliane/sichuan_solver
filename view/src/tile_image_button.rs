@@ -42,15 +42,15 @@ impl Component for TileImageButtonModel {
         let handle_click = ctx.link().callback(|_| Self::Message::TileSelected);
         html! {
             <div
-                class={styles::TILE_IMAGE_CONTAINER_STYLE.get().unwrap().css()}
+                class={styles::TILE_IMAGE_CONTAINER_STYLE.get().unwrap().css(None)}
                 onclick={handle_click}
             >
                 <input
                     type="radio"
-                    class={styles::TILE_IMAGE_BUTTON_RADIO_STYLE.get().unwrap().css()}
+                    class={styles::TILE_IMAGE_BUTTON_RADIO_STYLE.get().unwrap().css(None)}
                     checked={ctx.props().selected}
                 />
-                <div class={styles::TILE_IMAGE_BUTTON_STYLE.get().unwrap().css()}>
+                <div class={styles::TILE_IMAGE_BUTTON_STYLE.get().unwrap().css(None)}>
                     {Html::VRef(node)}
                 </div>
             </div>
