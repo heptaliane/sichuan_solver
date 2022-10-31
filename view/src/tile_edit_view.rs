@@ -8,7 +8,7 @@ use super::styles;
 use super::tile_map_view::TileMapViewModel;
 use super::tile_selector::TileSelectorModel;
 
-const DEFAULT_MAP_ROWS: usize = 5;
+const DEFAULT_MAP_ROWS: usize = 6;
 const DEFAULT_MAP_COLS: usize = 5;
 const MIN_MAP_SIZE: usize = 1;
 const MAP_BORDER: &str = "solid 3px #6200EE";
@@ -86,23 +86,6 @@ impl Component for TileEditViewModel {
                         styles::PANEL_CONTAINER_STYLE
                             .get()
                             .unwrap()
-                            .css(Some(HashMap::from([("border", MAP_BORDER)])))
-                    }
-                >
-                    <TileMapViewModel
-                        rows={self.row()}
-                        cols={self.col()}
-                        active={self.active.clone()}
-                        tile_map={props.tile_map.clone()}
-                        onclick={onclick}
-                    >
-                    </TileMapViewModel>
-                </div>
-                <div
-                    class={
-                        styles::PANEL_CONTAINER_STYLE
-                            .get()
-                            .unwrap()
                             .css(Some(HashMap::from([("border", SELECTOR_BORDER)])))
                     }
                 >
@@ -131,6 +114,23 @@ impl Component for TileEditViewModel {
                         onclick={onselect}
                     >
                     </TileSelectorModel>
+                </div>
+                <div
+                    class={
+                        styles::PANEL_CONTAINER_STYLE
+                            .get()
+                            .unwrap()
+                            .css(Some(HashMap::from([("border", MAP_BORDER)])))
+                    }
+                >
+                    <TileMapViewModel
+                        rows={self.row()}
+                        cols={self.col()}
+                        active={self.active.clone()}
+                        tile_map={props.tile_map.clone()}
+                        onclick={onclick}
+                    >
+                    </TileMapViewModel>
                 </div>
             </div>
         }
@@ -161,7 +161,7 @@ impl TileEditViewModel {
     fn col(&self) -> usize {
         match self.col_ref.cast::<HtmlInputElement>() {
             Some(col) => col.value().parse().unwrap(),
-            _ => DEFAULT_MAP_ROWS,
+            _ => DEFAULT_MAP_COLS,
         }
     }
 

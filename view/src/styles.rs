@@ -27,7 +27,7 @@ const TILE_IMAGE_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 3] = [
 const TILE_IMAGE_BUTTON_RADIO_STYLE_PROPS: [(&'static str, &'static str); 1] = [("padding", "3px")];
 const TILE_SELECTOR_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 2] = [
     ("display", "grid"),
-    ("grid-template-columns", "repeat(9, 1fr)"),
+    ("grid-template-columns", "repeat(18, 1fr)"),
 ];
 const PANEL_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 5] = [
     ("background", "white"),

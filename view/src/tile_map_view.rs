@@ -102,11 +102,11 @@ impl TileMapViewModel {
     }
 
     fn map_height(&self, ctx: &Context<Self>) -> f64 {
-        (DEFAULT_TILE_HEIGHT * ctx.props().cols + GRID_LINE_WIDTH * 2) as f64
+        (DEFAULT_TILE_HEIGHT * ctx.props().rows + GRID_LINE_WIDTH * 2) as f64
     }
 
     fn map_width(&self, ctx: &Context<Self>) -> f64 {
-        (DEFAULT_TILE_WIDTH * ctx.props().rows + GRID_LINE_WIDTH * 2) as f64
+        (DEFAULT_TILE_WIDTH * ctx.props().cols + GRID_LINE_WIDTH * 2) as f64
     }
 
     fn tile_top(&self, i: usize) -> f64 {
