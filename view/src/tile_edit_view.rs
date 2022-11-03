@@ -5,14 +5,13 @@ use yew::prelude::*;
 use yew::{NodeRef, Properties};
 
 use super::styles;
+use super::panel::Panel;
 use super::tile_map_view::TileMapViewModel;
 use super::tile_selector::TileSelectorModel;
 
 const DEFAULT_MAP_ROWS: usize = 6;
 const DEFAULT_MAP_COLS: usize = 5;
 const MIN_MAP_SIZE: usize = 1;
-const MAP_BORDER: &str = "solid 3px #6200EE";
-const SELECTOR_BORDER: &str = "solid 3px #6200EE";
 
 pub enum TileEditViewMsg {
     TileClicked([usize; 2]),
@@ -81,14 +80,7 @@ impl Component for TileEditViewModel {
 
         html! {
             <div>
-                <div
-                    class={
-                        styles::PANEL_CONTAINER_STYLE
-                            .get()
-                            .unwrap()
-                            .css(Some(HashMap::from([("border", SELECTOR_BORDER)])))
-                    }
-                >
+                <Panel>
                     <div>
                         <div>
                             <label>{"Rows: "}</label>
@@ -114,14 +106,9 @@ impl Component for TileEditViewModel {
                         onclick={onselect}
                     >
                     </TileSelectorModel>
-                </div>
-                <div
-                    class={
-                        styles::PANEL_CONTAINER_STYLE
-                            .get()
-                            .unwrap()
-                            .css(Some(HashMap::from([("border", MAP_BORDER)])))
-                    }
+                </Panel>
+                <Panel
+                    header={Some("Marhong tile map")}
                 >
                     <TileMapViewModel
                         rows={self.row()}
@@ -131,7 +118,7 @@ impl Component for TileEditViewModel {
                         onclick={onclick}
                     >
                     </TileMapViewModel>
-                </div>
+                </Panel>
             </div>
         }
     }

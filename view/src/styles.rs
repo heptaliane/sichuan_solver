@@ -29,12 +29,30 @@ const TILE_SELECTOR_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 2] = [
     ("display", "grid"),
     ("grid-template-columns", "repeat(18, 1fr)"),
 ];
-const PANEL_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 5] = [
-    ("background", "white"),
-    ("border-radius", "20px"),
-    ("box-shadow", "10px 5px 5px gray"),
-    ("margin", "auto"),
-    ("padding", "20px"),
+const PANEL_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 10] = [
+    ("position", "relative"),
+    ("text-align", "center"),
+    ("display", "flex"),
+    ("flex-direction", "column"),
+    ("min-width", "0"),
+    ("word-wrap", "break-word"),
+    ("background-clip", "border-box"),
+    ("background-color", "#fff"),
+    ("border", "1px solid"),
+    ("border-radius", ".25rem"),
+];
+const PANEL_HEADER_STYLE_PROPS: [(&'static str, &'static str); 3] = [
+    ("padding", ".5rem 1rem"),
+    ("margin-bottom", "0"),
+    ("border-bottom", "1px solid"),
+];
+const PANEL_BODY_STYLE_PROPS: [(&'static str, &'static str); 2] = [
+    ("flex", "1 1 auto"),
+    ("padding", "1rem 1rem"),
+];
+const PANEL_FOOTER_STYLE_PROPS: [(&'static str, &'static str); 2] = [
+    ("padding", ".5rem 1rem"),
+    ("border-top", "1px solid"),
 ];
 
 pub static ACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
@@ -44,6 +62,9 @@ pub static TILE_IMAGE_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new(
 pub static TILE_IMAGE_BUTTON_RADIO_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static TILE_SELECTOR_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static PANEL_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static PANEL_HEADER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static PANEL_BODY_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static PANEL_FOOTER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ComponentStyle {
@@ -60,7 +81,8 @@ impl ComponentStyle {
                 Style::new([css_str, extra_css].join(""))
             }
             None => Style::new(css_str),
-        }.expect("Invalid CSS")
+        }
+        .expect("Invalid CSS")
     }
 
     fn create_css_str(&self, props: &HashMap<&str, &str>) -> String {
@@ -121,6 +143,9 @@ pub fn init() {
             TILE_SELECTOR_CONTAINER_STYLE_PROPS.to_vec(),
         ),
         (&PANEL_CONTAINER_STYLE, PANEL_CONTAINER_STYLE_PROPS.to_vec()),
+        (&PANEL_HEADER_STYLE, PANEL_HEADER_STYLE_PROPS.to_vec()),
+        (&PANEL_BODY_STYLE, PANEL_BODY_STYLE_PROPS.to_vec()),
+        (&PANEL_FOOTER_STYLE, PANEL_FOOTER_STYLE_PROPS.to_vec()),
     ]
     .iter()
     .for_each(|(cell, props)| {
