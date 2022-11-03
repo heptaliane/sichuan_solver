@@ -5,6 +5,8 @@ use yew::prelude::*;
 use yew::Properties;
 
 use super::styles;
+use super::colors;
+use super::panel::{Panel, DEFAULT_PANEL_COLOR, PRIMARY_PANEL_COLOR};
 
 pub enum TileImageButtonMsg {
     TileSelected,
@@ -42,17 +44,22 @@ impl Component for TileImageButtonModel {
         let handle_click = ctx.link().callback(|_| Self::Message::TileSelected);
         html! {
             <div
-                class={styles::TILE_IMAGE_CONTAINER_STYLE.get().unwrap().css(None)}
                 onclick={handle_click}
             >
-                <input
-                    type="radio"
-                    class={styles::TILE_IMAGE_BUTTON_RADIO_STYLE.get().unwrap().css(None)}
-                    checked={ctx.props().selected}
-                />
-                <div class={styles::TILE_IMAGE_BUTTON_STYLE.get().unwrap().css(None)}>
-                    {Html::VRef(node)}
-                </div>
+                <Panel
+                    color={
+                        match ctx.props().selected {
+                            true => &PRIMARY_PANEL_COLOR,
+                            false => &DEFAULT_PANEL_COLOR,
+                        }
+                    }
+                >
+                    <div class={styles::CENTERING_CONTAINER_STYLE.get().unwrap().css(None)}>
+                        <div class={styles::TILE_IMAGE_BUTTON_STYLE.get().unwrap().css(None)}>
+                            {Html::VRef(node)}
+                        </div>
+                    </div>
+                </Panel>
             </div>
         }
     }

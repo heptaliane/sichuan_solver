@@ -19,12 +19,11 @@ const TILE_IMAGE_BUTTON_STYLE_PROPS: [(&'static str, &'static str); 5] = [
     ("border-radius", "5px"),
     ("margin", "auto"),
 ];
-const TILE_IMAGE_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 3] = [
+const CENTERING_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 3] = [
     ("padding", "5px"),
     ("margin", "auto"),
     ("text-align", "center"),
 ];
-const TILE_IMAGE_BUTTON_RADIO_STYLE_PROPS: [(&'static str, &'static str); 1] = [("padding", "3px")];
 const TILE_SELECTOR_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 2] = [
     ("display", "grid"),
     ("grid-template-columns", "repeat(18, 1fr)"),
@@ -58,8 +57,7 @@ const PANEL_FOOTER_STYLE_PROPS: [(&'static str, &'static str); 2] = [
 pub static ACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static INACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static TILE_IMAGE_BUTTON_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
-pub static TILE_IMAGE_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
-pub static TILE_IMAGE_BUTTON_RADIO_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static CENTERING_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static TILE_SELECTOR_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static PANEL_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static PANEL_HEADER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
@@ -131,12 +129,8 @@ pub fn init() {
             TILE_IMAGE_BUTTON_STYLE_PROPS.to_vec(),
         ),
         (
-            &TILE_IMAGE_CONTAINER_STYLE,
-            TILE_IMAGE_CONTAINER_STYLE_PROPS.to_vec(),
-        ),
-        (
-            &TILE_IMAGE_BUTTON_RADIO_STYLE,
-            TILE_IMAGE_BUTTON_RADIO_STYLE_PROPS.to_vec(),
+            &CENTERING_CONTAINER_STYLE,
+            CENTERING_CONTAINER_STYLE_PROPS.to_vec(),
         ),
         (
             &TILE_SELECTOR_CONTAINER_STYLE,

@@ -9,10 +9,10 @@ pub struct Color {
 impl Color {
     pub const fn new(red: u8, green: u8, blue: u8, alpha: f32) -> Self {
         Self {
-            red: red,
-            green: green,
-            blue: blue,
-            alpha: alpha,
+            red,
+            green,
+            blue,
+            alpha,
         }
     }
 
@@ -26,19 +26,19 @@ impl Color {
 
 #[derive(PartialEq, Debug)]
 pub struct ColorPalette {
-    pub background: Color,
     pub foreground: Color,
+    pub background: Color,
     pub border: Color,
 }
 
 pub static PRIMARY_COLOR: ColorPalette = ColorPalette {
-    background: Color::new(13, 110, 253, 1.0),
-    foreground: Color::new(255, 255, 255, 1.0),
-    border: Color::new(13, 110, 253, 1.0),
+    foreground: Color::new(0xff, 0xff, 0xff, 1.0),
+    background: Color::new(0x0d, 0x6e, 0xfd, 1.0),
+    border: Color::new(0x0d, 0x6e, 0xfd, 1.0),
 };
 
 pub static DEFAULT_COLOR: ColorPalette = ColorPalette {
+    foreground: Color::new(0x21, 0x25, 0x29, 1.0),
     background: Color::new(0, 0, 0, 0.03),
-    foreground: Color::new(33, 37, 41, 1.0),
     border: Color::new(0, 0, 0, 0.125),
 };
