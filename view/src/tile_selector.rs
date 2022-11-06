@@ -52,7 +52,7 @@ impl Component for TileSelectorModel {
         html! {
             <div
                 class={
-                    styles::GRID_CONTAINER_STYLE
+                    styles::FLEX_CONTAINER_STYLE
                         .get()
                         .unwrap()
                         .css(None)
@@ -62,7 +62,7 @@ impl Component for TileSelectorModel {
                     html! {
                         <div
                             class={
-                                styles::GRID_ITEM_STYLE
+                                styles::FLEX_ITEM_STYLE
                                     .get()
                                     .unwrap()
                                     .css(Some(HashMap::from([

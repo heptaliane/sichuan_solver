@@ -90,8 +90,8 @@ impl Component for TileEditViewModel {
         html! {
             <div>
                 <Panel>
-                    <div>
-                        <div>
+                    <div class={styles::FLEX_CONTAINER_STYLE.get().unwrap().css(None)}>
+                        <div class={styles::FLEX_ITEM_STYLE.get().unwrap().css(None)}>
                             <label>{"Rows: "}</label>
                             <input
                                 type="number"
@@ -100,7 +100,7 @@ impl Component for TileEditViewModel {
                                 oninput={onresize.clone()}
                             />
                         </div>
-                        <div>
+                        <div class={styles::FLEX_ITEM_STYLE.get().unwrap().css(None)}>
                             <label>{"Cols: "}</label>
                             <input
                                 type="number"

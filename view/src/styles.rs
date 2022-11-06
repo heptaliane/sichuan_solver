@@ -60,8 +60,8 @@ pub static ACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new
 pub static INACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static TILE_IMAGE_BUTTON_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static CENTERING_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
-pub static GRID_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
-pub static GRID_ITEM_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static FLEX_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static FLEX_ITEM_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static PANEL_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static PANEL_HEADER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static PANEL_BODY_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
@@ -136,8 +136,8 @@ pub fn init() {
             &CENTERING_CONTAINER_STYLE,
             CENTERING_CONTAINER_STYLE_PROPS.to_vec(),
         ),
-        (&GRID_ITEM_STYLE, FLEX_ITEM_STYLE_PROPS.to_vec()),
-        (&GRID_CONTAINER_STYLE, FLEX_CONTAINER_STYLE_PROPS.to_vec()),
+        (&FLEX_ITEM_STYLE, FLEX_ITEM_STYLE_PROPS.to_vec()),
+        (&FLEX_CONTAINER_STYLE, FLEX_CONTAINER_STYLE_PROPS.to_vec()),
         (&PANEL_CONTAINER_STYLE, PANEL_CONTAINER_STYLE_PROPS.to_vec()),
         (&PANEL_HEADER_STYLE, PANEL_HEADER_STYLE_PROPS.to_vec()),
         (&PANEL_BODY_STYLE, PANEL_BODY_STYLE_PROPS.to_vec()),
