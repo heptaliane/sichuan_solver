@@ -4,8 +4,8 @@ use yew::callback::Callback;
 use yew::prelude::*;
 use yew::{NodeRef, Properties};
 
-use super::styles;
 use super::panel::Panel;
+use super::styles;
 use super::tile_map_view::TileMapViewModel;
 use super::tile_selector::TileSelectorModel;
 
@@ -22,16 +22,14 @@ pub enum TileEditViewMsg {
 pub struct TileEditViewModel {
     row_ref: NodeRef,
     col_ref: NodeRef,
+    tile_map: HashMap<[usize; 2], usize>,
     active: HashMap<[usize; 2], styles::TileHighlightStyle>,
     selected: Option<usize>,
 }
 
 #[derive(Properties, PartialEq)]
 pub struct TileEditViewProps {
-    #[prop_or(HashMap::new())]
-    pub tile_map: HashMap<[usize; 2], usize>,
-
-    pub onupdate: Callback<([usize; 2], Option<usize>)>,
+    pub onsubmit: Callback<HashMap<[usize; 2], usize>>,
 }
 
 impl Component for TileEditViewModel {
@@ -42,6 +40,7 @@ impl Component for TileEditViewModel {
         Self {
             row_ref: NodeRef::default(),
             col_ref: NodeRef::default(),
+            tile_map: HashMap::new(),
             active: HashMap::new(),
             selected: None,
         }
@@ -51,7 +50,17 @@ impl Component for TileEditViewModel {
         match msg {
             Self::Message::TileClicked(coord) => {
                 self.active = HashMap::from([(coord, styles::TileHighlightStyle::ACTIVE)]);
-                ctx.props().onupdate.emit((coord, self.selected));
+                if let Some(idx) = self.selected {
+                    match self.tile_map.get(&coord) {
+                        Some(&current) if idx == current => {
+                            self.tile_map.remove(&coord);
+                        }
+                        _ => {
+                            self.tile_map.insert(coord, idx);
+                        }
+                    }
+                }
+                return true;
             }
             Self::Message::TileSelected(idx) => {
                 self.selected = match self.selected {
@@ -114,7 +123,7 @@ impl Component for TileEditViewModel {
                         rows={self.row()}
                         cols={self.col()}
                         active={self.active.clone()}
-                        tile_map={props.tile_map.clone()}
+                        tile_map={self.tile_map.clone()}
                         onclick={onclick}
                     >
                     </TileMapViewModel>
