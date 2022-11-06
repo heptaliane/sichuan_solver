@@ -79,7 +79,9 @@ pub fn panel(props: &PanelProps) -> Html {
                     styles::PANEL_BODY_STYLE
                         .get()
                         .unwrap()
-                        .css(None)
+                        .css(Some(HashMap::from([
+                            ("background-color", props.color.body_background.css_str().as_str()),
+                        ])))
                 }
             >
                 { for props.children.iter() }

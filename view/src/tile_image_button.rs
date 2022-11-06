@@ -4,9 +4,17 @@ use yew::callback::Callback;
 use yew::prelude::*;
 use yew::Properties;
 
+use super::colors::PRIMARY_COLOR;
+use super::panel::{Panel, PanelColor, DEFAULT_PANEL_COLOR};
 use super::styles;
-use super::colors;
-use super::panel::{Panel, DEFAULT_PANEL_COLOR, PRIMARY_PANEL_COLOR};
+
+static SELECTED_BUTTON_COLOR: PanelColor = PanelColor {
+    font: &PRIMARY_COLOR.foreground,
+    body_background: &PRIMARY_COLOR.background,
+    header_background: &PRIMARY_COLOR.background,
+    footer_background: &PRIMARY_COLOR.background,
+    border: &PRIMARY_COLOR.border,
+};
 
 pub enum TileImageButtonMsg {
     TileSelected,
@@ -44,20 +52,19 @@ impl Component for TileImageButtonModel {
         let handle_click = ctx.link().callback(|_| Self::Message::TileSelected);
         html! {
             <div
+                class={styles::CLICKABLE_STYLE.get().unwrap().css(None)}
                 onclick={handle_click}
             >
                 <Panel
                     color={
                         match ctx.props().selected {
-                            true => &PRIMARY_PANEL_COLOR,
+                            true => &SELECTED_BUTTON_COLOR,
                             false => &DEFAULT_PANEL_COLOR,
                         }
                     }
                 >
-                    <div class={styles::CENTERING_CONTAINER_STYLE.get().unwrap().css(None)}>
-                        <div class={styles::TILE_IMAGE_BUTTON_STYLE.get().unwrap().css(None)}>
-                            {Html::VRef(node)}
-                        </div>
+                    <div class={styles::TILE_IMAGE_BUTTON_STYLE.get().unwrap().css(None)}>
+                        {Html::VRef(node)}
                     </div>
                 </Panel>
             </div>

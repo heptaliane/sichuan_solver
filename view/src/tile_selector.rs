@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use yew::callback::Callback;
 use yew::prelude::*;
 use yew::Properties;
 
 use super::icon::tile::MahjongTileImage;
-use super::tile_image_button::TileImageButtonModel;
 use super::styles;
+use super::tile_image_button::TileImageButtonModel;
 
 const TILE_WIDTH: u32 = 40;
 const TILE_HEIGHT: u32 = 50;
@@ -48,15 +50,34 @@ impl Component for TileSelectorModel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let selected = ctx.props().selected;
         html! {
-            <div class={styles::TILE_SELECTOR_CONTAINER_STYLE.get().unwrap().css(None)}>
+            <div
+                class={
+                    styles::GRID_CONTAINER_STYLE
+                        .get()
+                        .unwrap()
+                        .css(None)
+                }
+            >
                 {self.image_data.iter().enumerate().map(|(i, img)| {
                     html! {
-                        <TileImageButtonModel
-                            image={img.clone()}
-                            id={i}
-                            selected={Some(i) == selected}
-                            onclick={ctx.link().callback(|id| Self::Message::TileSelected(id))}
-                        />
+                        <div
+                            class={
+                                styles::GRID_ITEM_STYLE
+                                    .get()
+                                    .unwrap()
+                                    .css(Some(HashMap::from([
+                                        ("margin", "5px"),
+                                        ("flex", "none"),
+                                    ])))
+                            }
+                        >
+                            <TileImageButtonModel
+                                image={img.clone()}
+                                id={i}
+                                selected={Some(i) == selected}
+                                onclick={ctx.link().callback(|id| Self::Message::TileSelected(id))}
+                            />
+                        </div>
                     }
                 }).collect::<Html>()}
             </div>

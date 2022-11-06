@@ -12,22 +12,27 @@ const INACTIVE_TILE_HIGHLIGHT_STYLE_PROPS: [(&'static str, &'static str); 3] = [
     ("bg_color", "lightgray"),
     ("line_width", "1"),
 ];
-const TILE_IMAGE_BUTTON_STYLE_PROPS: [(&'static str, &'static str); 5] = [
+const TILE_IMAGE_BUTTON_STYLE_PROPS: [(&'static str, &'static str); 7] = [
     ("color", "black"),
     ("background-color", "white"),
     ("border", "solid 1px"),
     ("border-radius", "5px"),
     ("margin", "auto"),
+    ("width", "fit-content"),
+    ("height", "fit-content"),
 ];
 const CENTERING_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 3] = [
     ("padding", "5px"),
     ("margin", "auto"),
     ("text-align", "center"),
 ];
-const TILE_SELECTOR_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 2] = [
-    ("display", "grid"),
-    ("grid-template-columns", "repeat(18, 1fr)"),
+const FLEX_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 3] = [
+    ("display", "flex"),
+    ("flex-direction", "row"),
+    ("flex-wrap", "wrap"),
 ];
+const FLEX_ITEM_STYLE_PROPS: [(&'static str, &'static str); 2] =
+    [("width", "fit-content"), ("flex", "auto")];
 const PANEL_CONTAINER_STYLE_PROPS: [(&'static str, &'static str); 10] = [
     ("position", "relative"),
     ("text-align", "center"),
@@ -45,24 +50,23 @@ const PANEL_HEADER_STYLE_PROPS: [(&'static str, &'static str); 3] = [
     ("margin-bottom", "0"),
     ("border-bottom", "1px solid"),
 ];
-const PANEL_BODY_STYLE_PROPS: [(&'static str, &'static str); 2] = [
-    ("flex", "1 1 auto"),
-    ("padding", "1rem 1rem"),
-];
-const PANEL_FOOTER_STYLE_PROPS: [(&'static str, &'static str); 2] = [
-    ("padding", ".5rem 1rem"),
-    ("border-top", "1px solid"),
-];
+const PANEL_BODY_STYLE_PROPS: [(&'static str, &'static str); 2] =
+    [("flex", "1 1 auto"), ("padding", "1rem 1rem")];
+const PANEL_FOOTER_STYLE_PROPS: [(&'static str, &'static str); 2] =
+    [("padding", ".5rem 1rem"), ("border-top", "1px solid")];
+const CLICKABLE_STYLE_PROPS: [(&'static str, &'static str); 1] = [("cursor", "pointer")];
 
 pub static ACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static INACTIVE_TILE_HIGHLIGHT_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static TILE_IMAGE_BUTTON_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static CENTERING_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
-pub static TILE_SELECTOR_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static GRID_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static GRID_ITEM_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static PANEL_CONTAINER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static PANEL_HEADER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static PANEL_BODY_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 pub static PANEL_FOOTER_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
+pub static CLICKABLE_STYLE: OnceCell<ComponentStyle> = OnceCell::new();
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ComponentStyle {
@@ -132,14 +136,13 @@ pub fn init() {
             &CENTERING_CONTAINER_STYLE,
             CENTERING_CONTAINER_STYLE_PROPS.to_vec(),
         ),
-        (
-            &TILE_SELECTOR_CONTAINER_STYLE,
-            TILE_SELECTOR_CONTAINER_STYLE_PROPS.to_vec(),
-        ),
+        (&GRID_ITEM_STYLE, FLEX_ITEM_STYLE_PROPS.to_vec()),
+        (&GRID_CONTAINER_STYLE, FLEX_CONTAINER_STYLE_PROPS.to_vec()),
         (&PANEL_CONTAINER_STYLE, PANEL_CONTAINER_STYLE_PROPS.to_vec()),
         (&PANEL_HEADER_STYLE, PANEL_HEADER_STYLE_PROPS.to_vec()),
         (&PANEL_BODY_STYLE, PANEL_BODY_STYLE_PROPS.to_vec()),
         (&PANEL_FOOTER_STYLE, PANEL_FOOTER_STYLE_PROPS.to_vec()),
+        (&CLICKABLE_STYLE, CLICKABLE_STYLE_PROPS.to_vec()),
     ]
     .iter()
     .for_each(|(cell, props)| {
