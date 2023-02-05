@@ -5,9 +5,10 @@ use yew::callback::Callback;
 use yew::prelude::*;
 use yew::{NodeRef, Properties};
 
-use super::components::{Coord};
-use super::tile_selector::TileSelectorModel;
+use super::components::Coord;
+use super::styles::LineStyle;
 use super::tile_map_view::TileMapViewModel;
+use super::tile_selector::TileSelectorModel;
 
 static ACTIVE_TILE_BG_COLOR: &str = "lightyellow";
 static ACTIVE_TILE_FG_COLOR: &str = "red";
@@ -25,7 +26,8 @@ pub struct TileEditViewModel {
     row_ref: NodeRef,
     col_ref: NodeRef,
     tile_map: HashMap<Coord, usize>,
-    active: Option<Coord>,
+    bg_color: HashMap<Coord, String>,
+    grid: HashMap<Coord, LineStyle>,
     selected: Option<usize>,
 }
 
@@ -43,16 +45,16 @@ impl Component for TileEditViewModel {
             row_ref: NodeRef::default(),
             col_ref: NodeRef::default(),
             tile_map: HashMap::new(),
-            active: None,
+            bg_color: HashMap::new(),
+            grid: HashMap::new(),
             selected: None,
         }
     }
 
-    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Self::Message::TileClicked(coord) => {
-                self.active = Some(coord);
-                // self.active = HashMap::from([(coord, styles::TileHighlightStyle::ACTIVE)]);
+                self.activate_tile(&coord);
                 if let Some(idx) = self.selected {
                     match self.tile_map.get(&coord) {
                         Some(&current) if idx == current => {
@@ -70,7 +72,7 @@ impl Component for TileEditViewModel {
                     Some(current) if idx == current => None,
                     _ => Some(idx),
                 };
-                self.active = None;
+                self.inactive_tile();
                 return true;
             }
             Self::Message::MapSizeChanged => {
@@ -80,7 +82,6 @@ impl Component for TileEditViewModel {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let props = ctx.props();
         let onclick = ctx
             .link()
             .callback(|coord: [usize; 2]| TileEditViewMsg::TileClicked(coord));
@@ -128,6 +129,8 @@ impl Component for TileEditViewModel {
                         <TileMapViewModel
                             rows={self.row()}
                             cols={self.col()}
+                            bg_color={self.bg_color.clone()}
+                            grid={self.grid.clone()}
                             tile_map={self.tile_map.clone()}
                             onclick={onclick}
                         >
@@ -171,5 +174,21 @@ impl TileEditViewModel {
         if let Some(col) = self.col_ref.cast::<HtmlInputElement>() {
             col.set_value(&size.to_string());
         }
+    }
+
+    fn activate_tile(&mut self, coord: &Coord) {
+        self.bg_color = HashMap::from([(coord.clone(), ACTIVE_TILE_BG_COLOR.to_string())]);
+        self.grid = HashMap::from([(
+            coord.clone(),
+            LineStyle {
+                color: ACTIVE_TILE_FG_COLOR.to_string(),
+                width: ACTIVE_TILE_LINE_WIDTH,
+            },
+        )]);
+    }
+
+    fn inactive_tile(&mut self) {
+        self.bg_color = HashMap::new();
+        self.grid = HashMap::new();
     }
 }

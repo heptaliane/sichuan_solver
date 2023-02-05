@@ -147,12 +147,12 @@ impl TileMapViewModel {
         context.set_stroke_style(&JsValue::from_str(DEFAULT_FG_COLOR));
         context.set_line_width(DEFAULT_GRID_WIDTH as f64);
         for i in 0..=cols {
-            context.move_to(self.tile_left(ctx, i), 0.);
+            context.move_to(self.tile_left(ctx, i), self.tile_top(ctx, 0));
             context.line_to(self.tile_left(ctx, i), self.tile_top(ctx, rows));
             context.stroke();
         }
         for i in 0..=rows {
-            context.move_to(0., self.tile_top(ctx, i));
+            context.move_to(self.tile_left(ctx, 0), self.tile_top(ctx, i));
             context.line_to(self.tile_left(ctx, cols), self.tile_top(ctx, i));
             context.stroke();
         }

@@ -55,7 +55,9 @@ impl Component for TileImageButtonModel {
                     }
                 >
                     <div class="card-body">
-                        {Html::VRef(node)}
+                        <div class="card bg-light">
+                            {Html::VRef(node)}
+                        </div>
                     </div>
                 </div>
             </div>
