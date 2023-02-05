@@ -1,11 +1,8 @@
-use std::collections::HashMap;
-
 use yew::callback::Callback;
 use yew::prelude::*;
 use yew::Properties;
 
 use super::icon::tile::MahjongTileImage;
-use super::styles;
 use super::tile_image_button::TileImageButtonModel;
 
 const TILE_WIDTH: u32 = 40;
@@ -50,27 +47,10 @@ impl Component for TileSelectorModel {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let selected = ctx.props().selected;
         html! {
-            <div
-                class={
-                    styles::FLEX_CONTAINER_STYLE
-                        .get()
-                        .unwrap()
-                        .css(None)
-                }
-            >
+            <div class="flex-container">
                 {self.image_data.iter().enumerate().map(|(i, img)| {
                     html! {
-                        <div
-                            class={
-                                styles::FLEX_ITEM_STYLE
-                                    .get()
-                                    .unwrap()
-                                    .css(Some(HashMap::from([
-                                        ("margin", "5px"),
-                                        ("flex", "none"),
-                                    ])))
-                            }
-                        >
+                        <div class="flex-item selector-item">
                             <TileImageButtonModel
                                 image={img.clone()}
                                 id={i}

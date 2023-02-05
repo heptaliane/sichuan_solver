@@ -1,0 +1,23 @@
+.flex-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.flex-item {
+    flex: auto;
+    width: fit-content;
+}
+
+.selector-item {
+    flex: none;
+    margin: 5px;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.item-padding {
+    margin: 5px;
+}

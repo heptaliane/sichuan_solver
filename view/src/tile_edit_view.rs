@@ -1,17 +1,19 @@
 use std::collections::HashMap;
+
 use web_sys::HtmlInputElement;
 use yew::callback::Callback;
 use yew::prelude::*;
 use yew::{NodeRef, Properties};
 
-use super::panel::Panel;
-use super::styles;
-use super::tile_map_view::TileMapViewModel;
+use super::components::{Coord};
 use super::tile_selector::TileSelectorModel;
+use super::tile_map_view::TileMapViewModel;
 
-const DEFAULT_MAP_ROWS: usize = 6;
-const DEFAULT_MAP_COLS: usize = 5;
-const MIN_MAP_SIZE: usize = 1;
+static ACTIVE_TILE_BG_COLOR: &str = "lightyellow";
+static ACTIVE_TILE_FG_COLOR: &str = "red";
+static ACTIVE_TILE_LINE_WIDTH: f64 = 3.0;
+static DEFAULT_MAP_ROWS: usize = 5;
+static DEFAULT_MAP_COLS: usize = 5;
 
 pub enum TileEditViewMsg {
     TileClicked([usize; 2]),
@@ -22,8 +24,8 @@ pub enum TileEditViewMsg {
 pub struct TileEditViewModel {
     row_ref: NodeRef,
     col_ref: NodeRef,
-    tile_map: HashMap<[usize; 2], usize>,
-    active: HashMap<[usize; 2], styles::TileHighlightStyle>,
+    tile_map: HashMap<Coord, usize>,
+    active: Option<Coord>,
     selected: Option<usize>,
 }
 
@@ -41,7 +43,7 @@ impl Component for TileEditViewModel {
             row_ref: NodeRef::default(),
             col_ref: NodeRef::default(),
             tile_map: HashMap::new(),
-            active: HashMap::new(),
+            active: None,
             selected: None,
         }
     }
@@ -49,7 +51,8 @@ impl Component for TileEditViewModel {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Self::Message::TileClicked(coord) => {
-                self.active = HashMap::from([(coord, styles::TileHighlightStyle::ACTIVE)]);
+                self.active = Some(coord);
+                // self.active = HashMap::from([(coord, styles::TileHighlightStyle::ACTIVE)]);
                 if let Some(idx) = self.selected {
                     match self.tile_map.get(&coord) {
                         Some(&current) if idx == current => {
@@ -67,14 +70,13 @@ impl Component for TileEditViewModel {
                     Some(current) if idx == current => None,
                     _ => Some(idx),
                 };
-                self.active = HashMap::new();
+                self.active = None;
                 return true;
             }
             Self::Message::MapSizeChanged => {
                 return true;
             }
         }
-        false
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
@@ -89,45 +91,49 @@ impl Component for TileEditViewModel {
 
         html! {
             <div>
-                <Panel>
-                    <div class={styles::FLEX_CONTAINER_STYLE.get().unwrap().css(None)}>
-                        <div class={styles::FLEX_ITEM_STYLE.get().unwrap().css(None)}>
-                            <label>{"Rows: "}</label>
-                            <input
-                                type="number"
-                                ref={&self.row_ref}
-                                min={MIN_MAP_SIZE.to_string()}
-                                oninput={onresize.clone()}
-                            />
+                <div class="card border-secondary item-padding">
+                    <div class="card-body">
+                        <div class="flex-container">
+                            <div class="flex-item">
+                                <label>{"Rows: "}</label>
+                                <input
+                                    type="number"
+                                    ref={&self.row_ref}
+                                    min="1"
+                                    oninput={onresize.clone()}
+                                />
+                            </div>
+                            <div class="flex-item">
+                                <label>{"Cols: "}</label>
+                                <input
+                                    type="number"
+                                    ref={&self.col_ref}
+                                    min="1"
+                                    oninput={onresize.clone()}
+                                />
+                            </div>
                         </div>
-                        <div class={styles::FLEX_ITEM_STYLE.get().unwrap().css(None)}>
-                            <label>{"Cols: "}</label>
-                            <input
-                                type="number"
-                                ref={&self.col_ref}
-                                min={MIN_MAP_SIZE.to_string()}
-                                oninput={onresize.clone()}
-                            />
-                        </div>
+                        <TileSelectorModel
+                            selected={self.selected}
+                            onclick={onselect}
+                        >
+                        </TileSelectorModel>
                     </div>
-                    <TileSelectorModel
-                        selected={self.selected}
-                        onclick={onselect}
-                    >
-                    </TileSelectorModel>
-                </Panel>
-                <Panel
-                    header={Some("Marhong tile map")}
-                >
-                    <TileMapViewModel
-                        rows={self.row()}
-                        cols={self.col()}
-                        active={self.active.clone()}
-                        tile_map={self.tile_map.clone()}
-                        onclick={onclick}
-                    >
-                    </TileMapViewModel>
-                </Panel>
+                </div>
+                <div class="card border-secondary item-padding">
+                    <div class="card-header">
+                        {"Mahjong tile mapping"}
+                    </div>
+                    <div class="card-body">
+                        <TileMapViewModel
+                            rows={self.row()}
+                            cols={self.col()}
+                            tile_map={self.tile_map.clone()}
+                            onclick={onclick}
+                        >
+                        </TileMapViewModel>
+                    </div>
+                </div>
             </div>
         }
     }
