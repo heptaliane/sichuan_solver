@@ -6,14 +6,17 @@ use yew::prelude::*;
 use yew::{NodeRef, Properties};
 
 use super::icon::tile::MahjongTileImage;
-use super::styles::{ComponentStyle, TileHighlightStyle};
+use super::styles::LineStyle;
+use super::components::{CoordElement, Coord};
 
 const DEFAULT_TILE_WIDTH: usize = 80;
 const DEFAULT_TILE_HEIGHT: usize = 100;
 const DEFAULT_MAP_ROWS: usize = 5;
 const DEFAULT_MAP_COLS: usize = 5;
-const GRID_LINE_WIDTH: usize = 1;
-const GRID_STYLE: &str = "lightgray";
+const DEFAULT_BG_COLOR: &str = "white";
+const DEFAULT_FG_COLOR: &str = "lightgray";
+const DEFAULT_GRID_WIDTH: f64 = 1.0;
+const DEFAULT_MAP_MARGIN: usize = 5;
 
 pub enum TileMapViewMsg {
     TileClicked([i32; 2]),
@@ -22,8 +25,6 @@ pub enum TileMapViewMsg {
 pub struct TileMapViewModel {
     image_data: MahjongTileImage,
     canvas: NodeRef,
-    height: usize,
-    width: usize,
 }
 
 #[derive(Properties, PartialEq)]
@@ -32,12 +33,21 @@ pub struct TileMapViewProps {
     pub rows: usize,
     #[prop_or(DEFAULT_MAP_COLS)]
     pub cols: usize,
-    #[prop_or(HashMap::new())]
-    pub active: HashMap<[usize; 2], TileHighlightStyle>,
-    #[prop_or(HashMap::new())]
-    pub tile_map: HashMap<[usize; 2], usize>,
+    #[prop_or(DEFAULT_TILE_HEIGHT)]
+    pub height: usize,
+    #[prop_or(DEFAULT_TILE_WIDTH)]
+    pub width: usize,
+    #[prop_or(DEFAULT_MAP_MARGIN)]
+    pub margin: usize,
 
-    pub onclick: Callback<[usize; 2]>,
+    #[prop_or(HashMap::new())]
+    pub tile_map: HashMap<Coord, usize>,
+    #[prop_or(HashMap::new())]
+    pub bg_color: HashMap<Coord, String>,
+    #[prop_or(HashMap::new())]
+    pub grid: HashMap<Coord, LineStyle>,
+
+    pub onclick: Callback<Coord>,
 }
 
 impl Component for TileMapViewModel {
@@ -48,16 +58,15 @@ impl Component for TileMapViewModel {
         Self {
             image_data: MahjongTileImage::new(),
             canvas: NodeRef::default(),
-            height: DEFAULT_TILE_HEIGHT,
-            width: DEFAULT_TILE_WIDTH,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            TileMapViewMsg::TileClicked([x, y]) => {
-                ctx.props().onclick.emit([self.xpos(x), self.ypos(y)]);
-            }
+            TileMapViewMsg::TileClicked([x, y]) => match (self.xpos(ctx, x), self.ypos(ctx, y)) {
+                (Some(xpos), Some(ypos)) => ctx.props().onclick.emit([xpos, ypos]),
+                _ => (),
+            },
         }
         false
     }
@@ -78,14 +87,10 @@ impl Component for TileMapViewModel {
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, _first_rendered: bool) {
-        self.clear_canvas(ctx);
+        self.reset_map(ctx);
+        self.draw_backgrounds(ctx);
+        self.draw_images(ctx);
         self.draw_grids(ctx);
-        for (&[x, y], style) in &ctx.props().active {
-            if let Some(style_value) = style.value() { 
-                self.highlight_tile(x, y, style_value);
-            }
-        }
-        self.draw_tile_images(ctx);
     }
 }
 
@@ -102,81 +107,136 @@ impl TileMapViewModel {
     }
 
     fn map_height(&self, ctx: &Context<Self>) -> f64 {
-        (DEFAULT_TILE_HEIGHT * ctx.props().rows + GRID_LINE_WIDTH * 2) as f64
+        (ctx.props().height * ctx.props().rows + ctx.props().margin * 2) as f64
     }
 
     fn map_width(&self, ctx: &Context<Self>) -> f64 {
-        (DEFAULT_TILE_WIDTH * ctx.props().cols + GRID_LINE_WIDTH * 2) as f64
+        (ctx.props().width * ctx.props().cols + ctx.props().margin * 2) as f64
     }
 
-    fn tile_top(&self, i: usize) -> f64 {
-        (self.height * i + GRID_LINE_WIDTH) as f64
+    fn tile_top(&self, ctx: &Context<Self>, i: CoordElement) -> f64 {
+        (ctx.props().height * (i as usize) + ctx.props().margin) as f64
     }
 
-    fn tile_left(&self, i: usize) -> f64 {
-        (self.width * i + GRID_LINE_WIDTH) as f64
+    fn tile_left(&self, ctx: &Context<Self>, i: CoordElement) -> f64 {
+        (ctx.props().width * (i as usize) + ctx.props().margin) as f64
     }
 
-    fn xpos(&self, xpixel: i32) -> usize {
-        (xpixel as f64 / self.width as f64).floor() as usize
+    fn xpos(&self, ctx: &Context<Self>, xpixel: i32) -> Option<CoordElement> {
+        let cols = ctx.props().cols as i32;
+        match (xpixel as f64 / ctx.props().width as f64).floor() as i32 {
+            xpos if xpos >= 0 && xpos < cols => Some(xpos as CoordElement),
+            _ => None,
+        }
     }
 
-    fn ypos(&self, ypixel: i32) -> usize {
-        (ypixel as f64 / self.height as f64).floor() as usize
+    fn ypos(&self, ctx: &Context<Self>, ypixel: i32) -> Option<CoordElement> {
+        let rows = ctx.props().rows as i32;
+        match (ypixel as f64 / ctx.props().height as f64).floor() as i32 {
+            ypos if ypos >= 0 && ypos < rows => Some(ypos as CoordElement),
+            _ => None,
+        }
     }
 
-    fn clear_canvas(&self, ctx: &Context<Self>) {
+    fn reset_map(&self, ctx: &Context<Self>) {
         let context = self.canvas_context();
+        context.set_fill_style(&JsValue::from_str(DEFAULT_BG_COLOR));
+        context.fill_rect(0., 0., self.map_width(ctx), self.map_height(ctx));
 
-        context.clear_rect(0., 0., self.map_width(ctx), self.map_height(ctx));
-    }
-
-    fn draw_grids(&self, ctx: &Context<Self>) {
         let (rows, cols) = (ctx.props().rows, ctx.props().cols);
-        let context = self.canvas_context();
-
-        context.set_stroke_style(&JsValue::from_str(GRID_STYLE));
-        context.set_line_width(GRID_LINE_WIDTH as f64);
+        context.set_stroke_style(&JsValue::from_str(DEFAULT_FG_COLOR));
+        context.set_line_width(DEFAULT_GRID_WIDTH as f64);
         for i in 0..=cols {
-            context.move_to(self.tile_left(i), 0.);
-            context.line_to(self.tile_left(i), self.tile_top(rows));
+            context.move_to(self.tile_left(ctx, i), 0.);
+            context.line_to(self.tile_left(ctx, i), self.tile_top(ctx, rows));
             context.stroke();
         }
         for i in 0..=rows {
-            context.move_to(0., self.tile_top(i));
-            context.line_to(self.tile_left(cols), self.tile_top(i));
+            context.move_to(0., self.tile_top(ctx, i));
+            context.line_to(self.tile_left(ctx, cols), self.tile_top(ctx, i));
             context.stroke();
         }
     }
 
-    fn highlight_tile(&self, x: usize, y: usize, style: &ComponentStyle) {
-        let (w, h) = (self.width as f64, self.height as f64);
-        let context = self.canvas_context();
-
-        context.set_fill_style(&JsValue::from_str(style.props["bg_color"]));
-        context.fill_rect(self.tile_left(x), self.tile_top(y), w, h);
-
-        context.set_stroke_style(&JsValue::from_str(style.props["fg_color"]));
-        context.set_line_width(style.props["line_width"].parse().unwrap());
-        context.stroke_rect(self.tile_left(x), self.tile_top(y), w, h);
+    fn draw_background(
+        &self,
+        ctx: &CanvasRenderingContext2d,
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        color: &str,
+    ) {
+        ctx.set_fill_style(&JsValue::from_str(&color));
+        ctx.fill_rect(x, y, w, h);
     }
 
-    fn draw_tile_images(&self, ctx: &Context<Self>) {
-        let (w, h) = (self.width as f64, self.height as f64);
+    fn draw_image(
+        &self,
+        ctx: &CanvasRenderingContext2d,
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        idx: usize,
+    ) {
+        let result = ctx.draw_image_with_html_image_element_and_dw_and_dh(
+            self.image_data.get(idx).as_ref(),
+            x,
+            y,
+            w,
+            h,
+        );
+        match result {
+            Err(_) => log::info!("Failed to load image."),
+            _ => (),
+        }
+    }
+
+    fn draw_grid(
+        &self,
+        ctx: &CanvasRenderingContext2d,
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        color: &str,
+        line_width: f64,
+    ) {
+        ctx.set_stroke_style(&JsValue::from_str(color));
+        ctx.set_line_width(line_width);
+        ctx.stroke_rect(x, y, w, h);
+    }
+
+    fn draw_backgrounds(&self, ctx: &Context<Self>) {
+        let (w, h) = (ctx.props().width as f64, ctx.props().height as f64);
         let context = self.canvas_context();
 
-        for (&[i, j], &idx) in &ctx.props().tile_map {
-            let result = context.draw_image_with_html_image_element_and_dw_and_dh(
-                self.image_data.get(idx).as_ref(),
-                self.tile_left(i),
-                self.tile_top(j),
-                w,
-                h,
-            );
-            match result {
-                Err(_) => log::info!("Failed to load image."),
-                _ => (),
-            }
+        for (&[xpos, ypos], color) in &ctx.props().bg_color {
+            let (x, y) = (self.tile_left(ctx, xpos), self.tile_top(ctx, ypos));
+            self.draw_background(&context, x, y, w, h, color);
+        }
+    }
+
+    fn draw_images(&self, ctx: &Context<Self>) {
+        let context = self.canvas_context();
+        let (w, h) = (ctx.props().width as f64, ctx.props().height as f64);
+
+        for (&[xpos, ypos], &idx) in &ctx.props().tile_map {
+            let (x, y) = (self.tile_left(ctx, xpos), self.tile_top(ctx, ypos));
+            self.draw_image(&context, x, y, w, h, idx);
+        }
+    }
+
+    fn draw_grids(&self, ctx: &Context<Self>) {
+        let context = self.canvas_context();
+        let (w, h) = (ctx.props().width as f64, ctx.props().height as f64);
+        let mut grids: Vec<(&[usize; 2], &LineStyle)> = ctx.props().grid.iter().collect();
+        grids.sort_by(|(_, l1), (_, l2)| l2.width.partial_cmp(&l1.width).unwrap());
+
+        for (&[xpos, ypos], line) in grids.iter() {
+            let (x, y) = (self.tile_left(ctx, xpos), self.tile_top(ctx, ypos));
+            self.draw_grid(&context, x, y, w, h, &line.color, line.width);
         }
     }
 }
