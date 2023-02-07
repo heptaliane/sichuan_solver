@@ -11,9 +11,7 @@ pub enum TileImageButtonMsg {
     TileSelected,
 }
 
-pub struct TileImageButtonModel {
-    selected: bool,
-}
+pub struct TileImageButtonModel {}
 
 #[derive(Properties, PartialEq)]
 pub struct TileImageButtonProps {
@@ -31,10 +29,8 @@ impl Component for TileImageButtonModel {
     type Message = TileImageButtonMsg;
     type Properties = TileImageButtonProps;
 
-    fn create(ctx: &Context<Self>) -> Self {
-        Self {
-            selected: ctx.props().selected,
-        }
+    fn create(_ctx: &Context<Self>) -> Self {
+        Self {}
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
@@ -64,10 +60,6 @@ impl Component for TileImageButtonModel {
         }
     }
 
-    fn rendered(&mut self, ctx: &Context<Self>, _first_rendered: bool) {
-        self.selected = ctx.props().selected;
-    }
-
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Self::Message::TileSelected => {
@@ -75,9 +67,5 @@ impl Component for TileImageButtonModel {
             }
         }
         false
-    }
-
-    fn changed(&mut self, ctx: &Context<Self>) -> bool {
-        self.selected != ctx.props().selected
     }
 }
