@@ -5,6 +5,7 @@ use yew::Properties;
 
 use super::components::{Coord, Nodes};
 use super::solve_step_list::SolveStepListModel;
+use super::styles::LineStyle;
 use super::tile_map_view::TileMapViewModel;
 
 fn get_node_edge(node: &Nodes) -> [Coord; 2] {
@@ -27,12 +28,16 @@ pub enum SolveResultViewMsg {
 
 pub struct SolveResultViewModel {
     selected: Option<usize>,
+    bg_color: HashMap<Coord, String>,
+    grid: HashMap<Coord, LineStyle>,
 }
 
 #[derive(Properties, PartialEq)]
 pub struct SolveResultViewProps {
-    #[prop_or(HashMap::new())]
+    pub rows: usize,
+    pub cols: usize,
     pub tile_map: HashMap<Coord, usize>,
+
     #[prop_or(Vec::new())]
     pub nodes: Vec<Nodes>,
 }
@@ -42,7 +47,11 @@ impl Component for SolveResultViewModel {
     type Properties = SolveResultViewProps;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self { selected: None }
+        Self {
+            selected: None,
+            bg_color: HashMap::new(),
+            grid: HashMap::new(),
+        }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -66,7 +75,8 @@ impl Component for SolveResultViewModel {
                     .reduce(|acc, i| match i {
                         Some(_) => i,
                         None => acc,
-                    }).unwrap_or(None);
+                    })
+                    .unwrap_or(None);
             }
         }
         true
@@ -106,6 +116,8 @@ impl Component for SolveResultViewModel {
                             <div class="card-body">
                                 <TileMapViewModel
                                     tile_map={ctx.props().tile_map.clone()}
+                                    bg_color={self.bg_color.clone()}
+                                    grid={self.grid.clone()}
                                     onclick={ctx.link().callback(|coord| Self::Message::TileClicked(coord))}
                                 />
                             </div>
