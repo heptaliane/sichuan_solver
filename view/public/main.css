@@ -9,6 +9,14 @@
     width: fit-content;
 }
 
+.fit-content {
+    width: fit-content;
+}
+
+.left-align {
+    text-align: left;
+}
+
 .selector-item {
     flex: none;
     margin: 5px;

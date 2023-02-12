@@ -52,20 +52,22 @@ impl Component for SolveStepListItemModel {
             <div
                 class={
                     match ctx.props().selected {
-                        true => "list-group-item flex-container btn btn-secondary",
-                        false => "list-group-item flex-container btn btn-outline-secondary",
+                        true => "list-group-item btn btn-secondary",
+                        false => "list-group-item btn btn-outline-secondary",
                     }
                 }
             >
                 <li class="list-item">
-                    <div class="flex-container">
-                        <div class="flex-item selector-item">
-                            <div class="card bg-light">
-                                {Html::VRef(node)}
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-3">
+                                <div class="card bg-light fit-content">
+                                    {Html::VRef(node)}
+                                </div>
                             </div>
-                        </div>
-                        <div class="flex-item selector-item">
-                            {format!("({}, {}) => ({}, {})", coords[0][0], coords[0][1], coords[1][0], coords[1][1])}
+                            <div class="col-9 left-align">
+                                {format!("({}, {}) => ({}, {})", coords[0][0], coords[0][1], coords[1][0], coords[1][1])}
+                            </div>
                         </div>
                     </div>
                 </li>

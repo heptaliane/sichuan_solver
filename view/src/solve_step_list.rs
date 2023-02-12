@@ -47,23 +47,19 @@ impl Component for SolveStepListModel {
         let tiles = &ctx.props().tiles;
 
         html! {
-            <div class="card border-secondary">
-                <div class="card-body">
-                    <ol>
-                        {ctx.props().coords.iter().enumerate().map(|(i, coords)| {
-                            html! {
-                                <SolveStepListItemModel
-                                    selected={Some(i) == selected}
-                                    id={i}
-                                    coords={coords.clone()}
-                                    image={self.image_data.get(tiles[&coords[0]])}
-                                    onclick={ctx.link().callback(|id| Self::Message::ItemClicked(id))}
-                                />
-                            }
-                        }).collect::<Html>()}
-                    </ol>
-                </div>
-            </div>
+            <ol class="list-group">
+                {ctx.props().coords.iter().enumerate().map(|(i, coords)| {
+                    html! {
+                        <SolveStepListItemModel
+                            selected={Some(i) == selected}
+                            id={i}
+                            coords={coords.clone()}
+                            image={self.image_data.get(tiles[&coords[0]])}
+                            onclick={ctx.link().callback(|id| Self::Message::ItemClicked(id))}
+                        />
+                    }
+                }).collect::<Html>()}
+            </ol>
         }
     }
 }
