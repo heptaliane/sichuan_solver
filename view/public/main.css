@@ -25,3 +25,8 @@
 .list-item {
     margin-left: 20px;
 }
+
+.stretch-input {
+    box-sizing: border-box;
+    width: 100%;
+}

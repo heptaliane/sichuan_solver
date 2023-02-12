@@ -83,32 +83,38 @@ impl Component for TileEditViewModel {
             .callback(|coord: [usize; 2]| TileEditViewMsg::TileClicked(coord));
 
         html! {
-            <div>
-                <div class="card border-secondary item-padding">
-                    <div class="card-body">
-                        <TileEditControllerModel
-                            selected={self.selected}
-                            rows={self.rows}
-                            cols={self.cols}
-                            onselect={ctx.link().callback(|idx| Self::Message::TileSelected(idx))}
-                            onchange={ctx.link().callback(|size| Self::Message::MapSizeChanged(size))}
-                        />
+            <div class="contaner">
+                <div class="row">
+                    <div class="col-12 col-lg-4">
+                        <div class="card border-secondary item-padding">
+                            <div class="card-body">
+                                <TileEditControllerModel
+                                    selected={self.selected}
+                                    rows={self.rows}
+                                    cols={self.cols}
+                                    onselect={ctx.link().callback(|idx| Self::Message::TileSelected(idx))}
+                                    onchange={ctx.link().callback(|size| Self::Message::MapSizeChanged(size))}
+                                />
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="card border-secondary item-padding">
-                    <div class="card-header">
-                        {"Mahjong tile mapping"}
-                    </div>
-                    <div class="card-body">
-                        <TileMapViewModel
-                            rows={self.rows}
-                            cols={self.cols}
-                            bg_color={self.bg_color.clone()}
-                            grid={self.grid.clone()}
-                            tile_map={self.tile_map.clone()}
-                            onclick={onclick}
-                        >
-                        </TileMapViewModel>
+                    <div class="col-12 col-lg-8">
+                        <div class="card border-secondary item-padding">
+                            <div class="card-header">
+                                {"Mahjong tile mapping"}
+                            </div>
+                            <div class="card-body">
+                                <TileMapViewModel
+                                    rows={self.rows}
+                                    cols={self.cols}
+                                    bg_color={self.bg_color.clone()}
+                                    grid={self.grid.clone()}
+                                    tile_map={self.tile_map.clone()}
+                                    onclick={onclick}
+                                >
+                                </TileMapViewModel>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

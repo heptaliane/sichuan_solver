@@ -90,6 +90,7 @@ impl Component for TileEditControllerModel {
                                 </div>
                                 <div class="col-8">
                                     <input
+                                        class="stretch-input"
                                         type="number"
                                         ref={&self.row_ref}
                                         value={ctx.props().rows.to_string()}
@@ -108,9 +109,10 @@ impl Component for TileEditControllerModel {
                                 </div>
                                 <div class="col-8">
                                     <input
+                                        class="stretch-input"
                                         type="number"
                                         ref={&self.col_ref}
-                                        value={ctx.props().rows.to_string()}
+                                        value={ctx.props().cols.to_string()}
                                         min="1"
                                         oninput={onchange.clone()}
                                     />
