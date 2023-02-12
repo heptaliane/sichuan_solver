@@ -28,7 +28,7 @@ pub struct SolveStepListProps {
     #[prop_or(HashMap::new())]
     pub tiles: HashMap<Coord, usize>,
 
-    pub onclick: Callback<usize>,
+    pub onclick: Callback<Option<usize>>,
 }
 
 impl Component for SolveStepListModel {
@@ -40,6 +40,20 @@ impl Component for SolveStepListModel {
         images.resize(TILE_WIDTH, TILE_HEIGHT);
 
         Self { image_data: images }
+    }
+
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Self::Message::ItemClicked(idx) => {
+                ctx.props()
+                    .onclick
+                    .emit(match ctx.props().selected == Some(idx) {
+                        true => None,
+                        false => Some(idx),
+                    });
+            },
+        }
+        true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {

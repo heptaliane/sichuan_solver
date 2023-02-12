@@ -52,10 +52,11 @@ impl Component for SolveStepListItemModel {
             <div
                 class={
                     match ctx.props().selected {
-                        true => "list-group-item btn btn-secondary",
-                        false => "list-group-item btn btn-outline-secondary",
+                        true => "list-group-item btn active",
+                        false => "list-group-item btn",
                     }
                 }
+                onclick={ctx.link().callback(|_| Self::Message::ItemClicked)}
             >
                 <li class="list-item">
                     <div class="container">
