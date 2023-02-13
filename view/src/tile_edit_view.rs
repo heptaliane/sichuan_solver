@@ -5,13 +5,10 @@ use yew::prelude::*;
 use yew::Properties;
 
 use super::components::Coord;
-use super::styles::LineStyle;
+use super::styles::{LineStyle, ACTIVE_TILE_BG_COLOR, ACTIVE_TILE_LINE};
 use super::tile_edit_controller::TileEditControllerModel;
 use super::tile_map_view::TileMapViewModel;
 
-static ACTIVE_TILE_BG_COLOR: &str = "lightyellow";
-static ACTIVE_TILE_FG_COLOR: &str = "red";
-static ACTIVE_TILE_LINE_WIDTH: f64 = 3.0;
 static DEFAULT_MAP_ROWS: usize = 5;
 static DEFAULT_MAP_COLS: usize = 5;
 
@@ -127,10 +124,7 @@ impl TileEditViewModel {
         self.bg_color = HashMap::from([(coord.clone(), ACTIVE_TILE_BG_COLOR.to_string())]);
         self.grid = HashMap::from([(
             coord.clone(),
-            LineStyle {
-                color: ACTIVE_TILE_FG_COLOR.to_string(),
-                width: ACTIVE_TILE_LINE_WIDTH,
-            },
+            ACTIVE_TILE_LINE.clone(),
         )]);
     }
 

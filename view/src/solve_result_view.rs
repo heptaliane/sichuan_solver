@@ -5,7 +5,7 @@ use yew::Properties;
 
 use super::components::{Coord, Nodes};
 use super::solve_step_list::SolveStepListModel;
-use super::styles::LineStyle;
+use super::styles::{LineStyle, ACTIVE_TILE_BG_COLOR, ACTIVE_TILE_LINE, GLAY_OUT_TILE_BG_COLOR};
 use super::tile_map_view::TileMapViewModel;
 
 fn get_node_edge(node: &Nodes) -> [Coord; 2] {
@@ -58,6 +58,7 @@ impl Component for SolveResultViewModel {
         match msg {
             Self::Message::StepSelected(idx) => {
                 self.selected = idx;
+                self.update_map_highlight(&ctx.props().nodes);
             }
             Self::Message::TileClicked(coord) => {
                 self.selected = ctx
@@ -77,6 +78,7 @@ impl Component for SolveResultViewModel {
                         None => acc,
                     })
                     .unwrap_or(None);
+                self.update_map_highlight(&ctx.props().nodes);
             }
         }
         true
@@ -125,6 +127,31 @@ impl Component for SolveResultViewModel {
                     </div>
                 </div>
             </div>
+        }
+    }
+}
+
+impl SolveResultViewModel {
+    fn update_map_highlight(&mut self, nodes: &Vec<Nodes>) {
+        self.bg_color = HashMap::new();
+        self.grid = HashMap::new();
+
+        if let Some(idx) = self.selected {
+            let (grayouts, other) = nodes.split_at(idx);
+
+            for node in grayouts {
+                for coord in get_node_edge(node) {
+                    self.bg_color
+                        .insert(coord, GLAY_OUT_TILE_BG_COLOR.to_string());
+                }
+            }
+            if let Some(node) = other.first() {
+                for coord in get_node_edge(node) {
+                    self.bg_color
+                        .insert(coord, ACTIVE_TILE_BG_COLOR.to_string());
+                    self.grid.insert(coord, ACTIVE_TILE_LINE.clone());
+                }
+            }
         }
     }
 }
