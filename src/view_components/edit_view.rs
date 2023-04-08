@@ -5,6 +5,7 @@ use yew::prelude::*;
 use yew::Properties;
 
 use super::super::components::{Coord, Tile};
+use super::card::Card;
 
 pub enum EditViewMsg {}
 
@@ -34,7 +35,15 @@ impl Component for EditView {
 
     fn view(&self, _ctx: &Context<Self>) -> Html {
         html! {
-            <div>
+            <div class="row">
+                <div class="col-12 col-lg-4">
+                    <Card>
+                    </Card>
+                </div>
+                <div class="col-12 col-lg-8">
+                    <Card>
+                    </Card>
+                </div>
             </div>
         }
     }
