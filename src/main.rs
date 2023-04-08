@@ -11,6 +11,8 @@ static DEFAULT_COLS: usize = 5;
 
 enum AppMsg {
     TabChanged(view_components::main_container::MainContainerViewTarget),
+    RowsChanged(usize),
+    ColsChanged(usize),
     EditorSubmitted(HashMap<components::Coord, components::Tile>),
 }
 
@@ -39,7 +41,15 @@ impl Component for App {
             Self::Message::TabChanged(target) => {
                 self.target_view = target;
                 true
-            },
+            }
+            Self::Message::RowsChanged(rows) => {
+                self.rows = rows;
+                true
+            }
+            Self::Message::ColsChanged(cols) => {
+                self.cols = cols;
+                true
+            }
             Self::Message::EditorSubmitted(tiles) => {
                 self.tiles = tiles;
                 true
@@ -60,6 +70,12 @@ impl Component for App {
                     }
                     on_editor_submit={
                         ctx.link().callback(|tiles| Self::Message::EditorSubmitted(tiles))
+                    }
+                    on_rows_change={
+                        ctx.link().callback(|rows| Self::Message::RowsChanged(rows))
+                    }
+                    on_cols_change={
+                        ctx.link().callback(|cols| Self::Message::ColsChanged(cols))
                     }
                 />
             </div>

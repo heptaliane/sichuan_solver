@@ -6,20 +6,28 @@ use yew::Properties;
 
 use super::super::components::{Coord, Tile};
 use super::card::Card;
+use super::edit_view_control::EditViewControl;
 
-pub enum EditViewMsg {}
+pub enum EditViewMsg {
+    RowsChanged(usize),
+    ColsChanged(usize),
+    TileChanged(Option<Tile>),
+}
 
 #[derive(Properties, PartialEq)]
 pub struct EditViewProps {
-    pub cols: usize,
     pub rows: usize,
+    pub cols: usize,
 
     pub tiles: HashMap<Coord, Tile>,
 
+    pub on_rows_change: Callback<usize>,
+    pub on_cols_change: Callback<usize>,
     pub onsubmit: Callback<HashMap<Coord, Tile>>,
 }
 
 pub struct EditView {
+    pub current: Option<Tile>,
     pub tiles: HashMap<Coord, Tile>,
 }
 
@@ -29,15 +37,41 @@ impl Component for EditView {
 
     fn create(ctx: &Context<Self>) -> Self {
         Self {
+            current: None,
             tiles: ctx.props().tiles.clone(),
         }
     }
 
-    fn view(&self, _ctx: &Context<Self>) -> Html {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Self::Message::RowsChanged(rows) => {
+                ctx.props().on_rows_change.emit(rows);
+                false
+            }
+            Self::Message::ColsChanged(rows) => {
+                ctx.props().on_cols_change.emit(rows);
+                false
+            }
+            Self::Message::TileChanged(tile) => {
+                self.current = tile;
+                true
+            }
+        }
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <div class="row">
                 <div class="col-12 col-lg-4">
                     <Card>
+                        <EditViewControl
+                            rows={ctx.props().rows}
+                            cols={ctx.props().cols}
+                            tile={self.current}
+                            on_rows_change={ctx.link().callback(|rows| Self::Message::RowsChanged(rows))}
+                            on_cols_change={ctx.link().callback(|cols| Self::Message::ColsChanged(cols))}
+                            on_tile_change={ctx.link().callback(|tile| Self::Message::TileChanged(tile))}
+                        />
                     </Card>
                 </div>
                 <div class="col-12 col-lg-8">
