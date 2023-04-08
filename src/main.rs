@@ -21,6 +21,15 @@ impl Component for App {
         }
     }
 
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Self::Message::TabChanged(target) => {
+                self.target_view = target;
+                true
+            }
+        }
+    }
+
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
             <div>
