@@ -2,6 +2,7 @@ use wasm_logger;
 use yew::prelude::*;
 
 mod view_components;
+mod components;
 
 enum AppMsg {
     TabChanged(view_components::main_container::MainContainerViewTarget),

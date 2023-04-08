@@ -1,11 +1,11 @@
 use yew::callback::Callback;
 use yew::prelude::*;
+use yew::virtual_dom::AttrValue;
 use yew::Properties;
-
 
 #[derive(Properties, PartialEq)]
 pub struct ContainerTabProps {
-    pub label: String,
+    pub label: AttrValue,
 
     #[prop_or(false)]
     pub active: bool,
@@ -17,7 +17,7 @@ pub struct ContainerTabProps {
 pub fn container_tab(props: &ContainerTabProps) -> Html {
     let onclick = props.onclick.clone();
 
-    html! { 
+    html! {
         <li class="nav-item" role="presentation">
             <button
                 class={
