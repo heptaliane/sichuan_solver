@@ -8,3 +8,4 @@ pub mod edit_view_control_tile_selector_button;
 pub mod icons;
 pub mod input_form_control_element;
 pub mod main_container;
+pub mod tile_map_canvas;

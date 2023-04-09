@@ -5,6 +5,7 @@ use yew::prelude::*;
 use yew::Properties;
 
 use super::super::components::{Coord, Tile};
+use super::tile_map_canvas::TileMapCanvas;
 
 #[derive(Properties, PartialEq)]
 pub struct EditMapCanvasProps {
@@ -17,8 +18,15 @@ pub struct EditMapCanvasProps {
 
 #[function_component(EditMapCanvas)]
 pub fn edit_map_canvas(props: &EditMapCanvasProps) -> Html {
+    let onselect = props.onselect.clone();
     html! {
         <div>
+            <TileMapCanvas
+                rows={props.rows}
+                cols={props.cols}
+                tiles={props.tiles.to_owned()}
+                onclick={onselect}
+            />
         </div>
     }
 }

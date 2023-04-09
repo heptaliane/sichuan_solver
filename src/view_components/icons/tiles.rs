@@ -67,7 +67,7 @@ async fn create_image_from_svg(svg_str: &str) -> Result<Rc<HtmlImageElement>, Js
     Ok(img_rc)
 }
 
-#[derive(Clone)]
+#[derive(PartialEq, Clone)]
 pub struct TileImageProvider {
     tiles: Vec<Rc<HtmlImageElement>>,
 }
