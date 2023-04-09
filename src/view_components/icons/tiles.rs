@@ -1,10 +1,8 @@
-use base64;
-use std::boxed::Box;
+use std::future::Future;
 use std::rc::Rc;
-use wasm_bindgen::JsCast;
+use std::task::Poll;
 
-use wasm_bindgen::prelude::Closure;
-use web_sys::Event;
+use base64;
 use web_sys::HtmlImageElement;
 
 const N_SVG_ICONS: usize = 34;
@@ -45,35 +43,47 @@ const SVG_ICON_STR: [&str; N_SVG_ICONS] = [
     include_str!("svg/white.svg"),
 ];
 
-fn create_svg_element(svg_str: &str) -> HtmlImageElement {
-    let image = HtmlImageElement::new().unwrap();
-    let b64svg = base64::encode(svg_str);
-    image.set_src(&format!("data:image/svg+xml;base64,{}", b64svg));
-    image
+struct ImageLoader {
+    img: Rc<HtmlImageElement>,
+}
+
+impl Future for ImageLoader {
+    type Output = Rc<HtmlImageElement>;
+
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        match self.img.complete() {
+            true => Poll::Ready(self.img.to_owned()),
+            false => Poll::Pending,
+        }
+    }
+}
+
+impl ImageLoader {
+    fn from_svg(svg_str: &str) -> Self { 
+        let img = HtmlImageElement::new().unwrap();
+        let b64svg = base64::encode(svg_str);
+        img.set_src(&format!("data:image/svg+xml;base64,{}", b64svg));
+        Self { img: Rc::new(img) }
+    }
 }
 
 pub struct TileImageProvider {
-    tiles: [Rc<HtmlImageElement>; N_SVG_ICONS],
-    loaded: [bool; N_SVG_ICONS],
+    tiles: Vec<Rc<HtmlImageElement>>,
 }
 
 impl TileImageProvider {
-    pub fn new() -> Self {
-        let tiles = SVG_ICON_STR.map(|svg| Rc::new(create_svg_element(svg)));
-        let mut loaded = SVG_ICON_STR.map(|_| false);
-
-        tiles.iter().enumerate().for_each(|(i, tile)| {
-            let mut loaded_vec = loaded.to_vec();
-            let callback = Closure::wrap(Box::new(move |_| {
-                loaded_vec[i] = true 
-            }) as Box<dyn FnMut(Event)>);
-            tile.set_onload(Some(callback.as_ref().unchecked_ref()));
-        });
-
-        Self {
-            tiles: tiles,
-            loaded: loaded,
+    pub async fn new() -> Self {
+        let futures = SVG_ICON_STR.map(|svg| ImageLoader::from_svg(svg));
+        let mut tiles: Vec<Rc<HtmlImageElement>> = Vec::new();
+        for future in futures {
+            let tile = future.await;
+            tiles.push(tile);
         }
+
+        Self { tiles: tiles }
     }
 
     pub fn get(&self, idx: usize) -> &Rc<HtmlImageElement> {
@@ -82,9 +92,5 @@ impl TileImageProvider {
 
     pub fn iter(&self) -> std::slice::Iter<Rc<HtmlImageElement>> {
         self.tiles.iter()
-    }
-
-    pub fn loaded(&self) -> bool {
-        self.loaded.iter().all(|&value| value)
     }
 }
