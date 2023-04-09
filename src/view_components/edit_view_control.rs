@@ -40,6 +40,8 @@ pub fn edit_view_control(props: &EditViewControlProps) -> Html {
                                 }
                             })}
                         />
+                    </div>
+                    <div class="col-6">
                         <InputFormControlElement
                             label="Cols"
                             input_type="number"

@@ -1,5 +1,6 @@
 pub mod card;
 pub mod container_tab;
+pub mod edit_map_canvas;
 pub mod edit_view;
 pub mod edit_view_control;
 pub mod edit_view_control_tile_selector;

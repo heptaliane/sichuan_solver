@@ -6,12 +6,14 @@ use yew::Properties;
 
 use super::super::components::{Coord, Tile};
 use super::card::Card;
+use super::edit_map_canvas::EditMapCanvas;
 use super::edit_view_control::EditViewControl;
 
 pub enum EditViewMsg {
     RowsChanged(usize),
     ColsChanged(usize),
     TileChanged(Option<Tile>),
+    MapUpdated(Coord),
 }
 
 #[derive(Properties, PartialEq)]
@@ -56,6 +58,20 @@ impl Component for EditView {
                 self.current = tile;
                 true
             }
+            Self::Message::MapUpdated(coord) => {
+                match (self.current, self.tiles.get(&coord)) {
+                    (Some(next), Some(&current)) if next == current => {
+                        self.tiles.remove(&coord);
+                    }
+                    (Some(next), _) => {
+                        self.tiles.insert(coord, next);
+                    }
+                    (None, _) => {
+                        self.tiles.remove(&coord);
+                    }
+                }
+                true
+            }
         }
     }
 
@@ -76,6 +92,12 @@ impl Component for EditView {
                 </div>
                 <div class="col-12 col-lg-8">
                     <Card>
+                        <EditMapCanvas
+                            rows={ctx.props().rows}
+                            cols={ctx.props().cols}
+                            tiles={self.tiles.to_owned()}
+                            onselect={ctx.link().callback(|coord| Self::Message::MapUpdated(coord))}
+                        />
                     </Card>
                 </div>
             </div>
