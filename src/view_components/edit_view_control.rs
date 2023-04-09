@@ -5,6 +5,7 @@ use yew::Properties;
 
 use super::super::components::Tile;
 use super::card::Card;
+use super::edit_view_control_tile_selector::EditViewControlTileSelector;
 use super::input_form_control_element::InputFormControlElement;
 
 #[derive(Properties, PartialEq)]
@@ -23,33 +24,50 @@ pub fn edit_view_control(props: &EditViewControlProps) -> Html {
     let on_rows_change = props.on_rows_change.clone();
     let on_cols_change = props.on_cols_change.clone();
     let on_tile_change = props.on_tile_change.clone();
+    let selector_loaded = use_state(|| false);
+    let selector_loaded_clone = selector_loaded.clone();
 
     html! {
-        <Card header="Matrix size">
-            <div class="row">
-                <div class="col-6">
-                    <InputFormControlElement
-                        label="Rows"
-                        input_type="number"
-                        value={AttrValue::from(props.rows.to_string())}
-                        onchange={Callback::from(move |v: AttrValue| {
-                            if let Ok(value) = v.to_string().parse::<usize>() {
-                                on_rows_change.emit(value);
-                            }
-                        })}
-                    />
-                    <InputFormControlElement
-                        label="Cols"
-                        input_type="number"
-                        value={AttrValue::from(props.cols.to_string())}
-                        onchange={Callback::from(move |v: AttrValue| {
-                            if let Ok(value) = v.to_string().parse::<usize>() {
-                                on_cols_change.emit(value);
-                            }
-                        })}
-                    />
+        <div>
+            <Card header="Matrix size">
+                <div class="row">
+                    <div class="col-6">
+                        <InputFormControlElement
+                            label="Rows"
+                            input_type="number"
+                            value={AttrValue::from(props.rows.to_string())}
+                            onchange={Callback::from(move |v: AttrValue| {
+                                if let Ok(value) = v.to_string().parse::<usize>() {
+                                    on_rows_change.emit(value);
+                                }
+                            })}
+                        />
+                        <InputFormControlElement
+                            label="Cols"
+                            input_type="number"
+                            value={AttrValue::from(props.cols.to_string())}
+                            onchange={Callback::from(move |v: AttrValue| {
+                                if let Ok(value) = v.to_string().parse::<usize>() {
+                                    on_cols_change.emit(value);
+                                }
+                            })}
+                        />
+                    </div>
                 </div>
-            </div>
-        </Card>
+            </Card>
+            <Card header="Tile selector">
+                <EditViewControlTileSelector
+                    selected={props.tile}
+                        loaded={*selector_loaded}
+                    onchange={Callback::from(move |tile: Option<Tile>| {
+                        on_tile_change.emit(tile);
+                    })}
+                    onload={Callback::from(move |_| {
+                        log::info!("Loaded");
+                        selector_loaded_clone.set(true);
+                    })}
+                />
+            </Card>
+        </div>
     }
 }

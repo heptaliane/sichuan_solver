@@ -3,7 +3,10 @@ use std::rc::Rc;
 use std::task::Poll;
 
 use base64;
+use futures::future::join_all;
 use web_sys::HtmlImageElement;
+
+use super::super::super::components::Tile;
 
 const N_SVG_ICONS: usize = 34;
 const SVG_ICON_STR: [&str; N_SVG_ICONS] = [
@@ -52,7 +55,7 @@ impl Future for ImageLoader {
 
     fn poll(
         self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
+        _cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Self::Output> {
         match self.img.complete() {
             true => Poll::Ready(self.img.to_owned()),
@@ -62,7 +65,7 @@ impl Future for ImageLoader {
 }
 
 impl ImageLoader {
-    fn from_svg(svg_str: &str) -> Self { 
+    fn from_svg(svg_str: &str) -> Self {
         let img = HtmlImageElement::new().unwrap();
         let b64svg = base64::encode(svg_str);
         img.set_src(&format!("data:image/svg+xml;base64,{}", b64svg));
@@ -70,24 +73,30 @@ impl ImageLoader {
     }
 }
 
+#[derive(Clone)]
 pub struct TileImageProvider {
     tiles: Vec<Rc<HtmlImageElement>>,
 }
 
 impl TileImageProvider {
-    pub async fn new() -> Self {
-        let futures = SVG_ICON_STR.map(|svg| ImageLoader::from_svg(svg));
-        let mut tiles: Vec<Rc<HtmlImageElement>> = Vec::new();
-        for future in futures {
-            let tile = future.await;
-            tiles.push(tile);
-        }
-
-        Self { tiles: tiles }
+    pub fn blank_new() -> Self {
+        Self { tiles: Vec::new() }
     }
 
-    pub fn get(&self, idx: usize) -> &Rc<HtmlImageElement> {
-        &self.tiles[idx]
+    pub async fn new() -> Self {
+        let futures = SVG_ICON_STR.iter().map(|svg| ImageLoader::from_svg(svg));
+        let results = join_all(futures).await;
+        let mut tiles = Vec::new();
+        for result in results {
+            tiles.push(result);
+        }
+        log::info!("Finished");
+
+        Self { tiles }
+    }
+
+    pub fn get(&self, tile: Tile) -> &Rc<HtmlImageElement> {
+        &self.tiles[tile as usize]
     }
 
     pub fn iter(&self) -> std::slice::Iter<Rc<HtmlImageElement>> {
