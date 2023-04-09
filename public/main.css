@@ -10,7 +10,7 @@
 }
 
 .fit-content {
-    width: fit-content;
+    width: 100%;
 }
 
 .left-align {
@@ -37,4 +37,8 @@
 .stretch-input {
     box-sizing: border-box;
     width: 100%;
+}
+
+.tile-container {
+    margin: 10%;
 }
