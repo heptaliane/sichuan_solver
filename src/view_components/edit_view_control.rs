@@ -24,8 +24,6 @@ pub fn edit_view_control(props: &EditViewControlProps) -> Html {
     let on_rows_change = props.on_rows_change.clone();
     let on_cols_change = props.on_cols_change.clone();
     let on_tile_change = props.on_tile_change.clone();
-    let selector_loaded = use_state(|| false);
-    let selector_loaded_clone = selector_loaded.clone();
 
     html! {
         <div>
@@ -58,13 +56,8 @@ pub fn edit_view_control(props: &EditViewControlProps) -> Html {
             <Card header="Tile selector">
                 <EditViewControlTileSelector
                     selected={props.tile}
-                        loaded={*selector_loaded}
                     onchange={Callback::from(move |tile: Option<Tile>| {
                         on_tile_change.emit(tile);
-                    })}
-                    onload={Callback::from(move |_| {
-                        log::info!("Loaded");
-                        selector_loaded_clone.set(true);
                     })}
                 />
             </Card>

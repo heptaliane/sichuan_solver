@@ -1,9 +1,11 @@
-use std::future::Future;
 use std::rc::Rc;
-use std::task::Poll;
 
 use base64;
 use futures::future::join_all;
+use wasm_bindgen::prelude::Closure;
+use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen_futures::JsFuture;
+use js_sys::Promise;
 use web_sys::HtmlImageElement;
 
 use super::super::super::components::Tile;
@@ -46,31 +48,23 @@ const SVG_ICON_STR: [&str; N_SVG_ICONS] = [
     include_str!("svg/white.svg"),
 ];
 
-struct ImageLoader {
-    img: Rc<HtmlImageElement>,
-}
+async fn create_image_from_svg(svg_str: &str) -> Result<Rc<HtmlImageElement>, JsValue> {
+    let img = HtmlImageElement::new()?;
+    let b64svg = base64::encode(svg_str);
+    img.set_src(&format!("data:image/svg+xml;base64,{}", b64svg));
+    let img_rc = Rc::new(img);
 
-impl Future for ImageLoader {
-    type Output = Rc<HtmlImageElement>;
+    let promise = Promise::new(&mut |resolve, _| {
+        let img_clone = Rc::clone(&img_rc);
+        let closure = Closure::wrap(Box::new(move || {
+            resolve.call0(&JsValue::null());
+        }) as Box<dyn FnMut()>);
+        img_clone.set_onload(Some(closure.as_ref().unchecked_ref()));
+        closure.forget();
+    });
 
-    fn poll(
-        self: std::pin::Pin<&mut Self>,
-        _cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Self::Output> {
-        match self.img.complete() {
-            true => Poll::Ready(self.img.to_owned()),
-            false => Poll::Pending,
-        }
-    }
-}
-
-impl ImageLoader {
-    fn from_svg(svg_str: &str) -> Self {
-        let img = HtmlImageElement::new().unwrap();
-        let b64svg = base64::encode(svg_str);
-        img.set_src(&format!("data:image/svg+xml;base64,{}", b64svg));
-        Self { img: Rc::new(img) }
-    }
+    JsFuture::from(promise).await?;
+    Ok(img_rc)
 }
 
 #[derive(Clone)]
@@ -84,14 +78,12 @@ impl TileImageProvider {
     }
 
     pub async fn new() -> Self {
-        let futures = SVG_ICON_STR.iter().map(|svg| ImageLoader::from_svg(svg));
+        let futures = SVG_ICON_STR.iter().map(|svg| create_image_from_svg(svg));
         let results = join_all(futures).await;
         let mut tiles = Vec::new();
         for result in results {
-            tiles.push(result);
+            tiles.push(result.unwrap());
         }
-        log::info!("Finished");
-
         Self { tiles }
     }
 
