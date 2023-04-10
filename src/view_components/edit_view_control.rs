@@ -13,10 +13,12 @@ pub struct EditViewControlProps {
     pub rows: usize,
     pub cols: usize,
     pub tile: Option<Tile>,
+    pub submittable: bool,
 
     pub on_rows_change: Callback<usize>,
     pub on_cols_change: Callback<usize>,
     pub on_tile_change: Callback<Option<Tile>>,
+    pub onsubmit: Callback<()>,
 }
 
 #[function_component(EditViewControl)]
@@ -24,6 +26,7 @@ pub fn edit_view_control(props: &EditViewControlProps) -> Html {
     let on_rows_change = props.on_rows_change.clone();
     let on_cols_change = props.on_cols_change.clone();
     let on_tile_change = props.on_tile_change.clone();
+    let onsubmit = props.onsubmit.clone();
 
     html! {
         <div>
@@ -63,6 +66,18 @@ pub fn edit_view_control(props: &EditViewControlProps) -> Html {
                     })}
                 />
             </Card>
+            <div class="row">
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        disabled={!props.submittable}
+                        onclick={Callback::from(move |_| {
+                            onsubmit.emit(());
+                        })}
+                    >
+                        { "Submit" }
+                    </button>
+            </div>
         </div>
     }
 }

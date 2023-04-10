@@ -14,6 +14,7 @@ pub enum EditViewMsg {
     ColsChanged(usize),
     TileChanged(Option<Tile>),
     MapUpdated(Coord),
+    MapSubmitted,
 }
 
 #[derive(Properties, PartialEq)]
@@ -72,6 +73,10 @@ impl Component for EditView {
                 }
                 true
             }
+            Self::Message::MapSubmitted => {
+                ctx.props().onsubmit.emit(self.tiles.to_owned());
+                false
+            }
         }
     }
 
@@ -84,9 +89,11 @@ impl Component for EditView {
                             rows={ctx.props().rows}
                             cols={ctx.props().cols}
                             tile={self.current}
+                            submittable={validate_tiles(&self.tiles)}
                             on_rows_change={ctx.link().callback(|rows| Self::Message::RowsChanged(rows))}
                             on_cols_change={ctx.link().callback(|cols| Self::Message::ColsChanged(cols))}
                             on_tile_change={ctx.link().callback(|tile| Self::Message::TileChanged(tile))}
+                            onsubmit={ctx.link().callback(|_| Self::Message::MapSubmitted)}
                         />
                     </Card>
                 </div>
@@ -103,4 +110,16 @@ impl Component for EditView {
             </div>
         }
     }
+}
+
+fn validate_tiles(tiles: &HashMap<Coord, Tile>) -> bool {
+    let mut has_even_tiles: HashMap<&Tile, bool> = HashMap::new();
+    for tile in tiles.values() {
+        match has_even_tiles.contains_key(tile) {
+            true => has_even_tiles.insert(tile, !has_even_tiles[tile]),
+            false => has_even_tiles.insert(tile, false),
+        };
+    }
+
+    has_even_tiles.values().all(|&flg| flg)
 }
