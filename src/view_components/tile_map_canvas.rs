@@ -15,7 +15,7 @@ const TILE_WIDTH: usize = 80;
 const TILE_HEIGHT: usize = 100;
 const MAP_MARGIN: usize = 5;
 const DEFAULT_BG_COLOR: &str = "white";
-const BLANK_BG_COLOR: &str = "lightgray";
+const BLANK_BG_COLOR: &str = "gainsboro";
 const GRID_COLOR: &str = "gray";
 const GRID_WIDTH: f64 = 1.0;
 
