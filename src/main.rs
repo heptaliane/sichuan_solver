@@ -4,6 +4,7 @@ use wasm_logger;
 use yew::prelude::*;
 
 mod components;
+mod solver;
 mod view_components;
 
 static DEFAULT_ROWS: usize = 5;
