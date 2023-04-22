@@ -76,6 +76,40 @@ fn get_intersection(grid1: &Grid, grid2: &Grid) -> Option<Coord> {
     }
 }
 
+fn explore_horizontal_connection(
+    xrange: &[CoordElement; 2],
+    yaxis: &[CoordElement; 2],
+    map: &TileMap,
+) -> Option<Grid> {
+    for x in xrange[0]..=xrange[1] {
+        match (yaxis[0]..=yaxis[1])
+            .map(|y| map.get(&[x, y]) == None)
+            .all(|flg| flg)
+        {
+            true => return Some([[x, yaxis[0]], [x, yaxis[1]]]),
+            _ => (),
+        }
+    }
+    None
+}
+
+fn explore_vertical_connection(
+    yrange: &[CoordElement; 2],
+    xaxis: &[CoordElement; 2],
+    map: &TileMap,
+) -> Option<Grid> {
+    for y in yrange[0]..=yrange[1] {
+        match (xaxis[0]..=xaxis[1])
+            .map(|x| map.get(&[x, y]) == None)
+            .all(|flg| flg)
+        {
+            true => return Some([[xaxis[0], y], [xaxis[1], y]]),
+            _ => (),
+        }
+    }
+    None
+}
+
 #[test]
 fn test_get_map_size() {
     use std::collections::HashMap;
@@ -207,4 +241,43 @@ fn test_get_intersection() {
     check_all([[0, 0], [0, 2]], [[1, 1], [1, 3]], None);
     check_all([[0, 0], [2, 0]], [[1, 0], [3, 0]], None);
     check_all([[0, 0], [2, 0]], [[1, 1], [3, 1]], None);
+}
+
+#[test]
+fn test_explore_horizontal_connection() {
+    use std::collections::HashMap;
+    let map1: TileMap = HashMap::from([([1, 1], 0), ([3, 1], 0)]);
+    /* tile map:
+     * | x x
+     * | 0 |
+     * | x |
+     * | 0 |
+     */
+    assert_eq!(
+        explore_horizontal_connection(&[1, 3], &[0, 2], &map1),
+        Some([[2, 0], [2, 2]])
+    );
+    assert_eq!(explore_horizontal_connection(&[1, 1], &[0, 2], &map1), None);
+
+    let map2: TileMap = HashMap::from([([1, 1], 0), ([2, 1], 0), ([3, 1], 0)]);
+    assert_eq!(explore_horizontal_connection(&[1, 3], &[0, 2], &map2), None);
+}
+
+#[test]
+fn test_explore_vertical_connection() {
+    use std::collections::HashMap;
+    let map1: TileMap = HashMap::from([([1, 1], 0), ([1, 3], 0)]);
+    /* tile map:
+     * -------
+     * x 0 x 0
+     * x -----
+     */
+    assert_eq!(
+        explore_vertical_connection(&[1, 3], &[0, 2], &map1),
+        Some([[0, 2], [2, 2]])
+    );
+    assert_eq!(explore_vertical_connection(&[1, 1], &[0, 2], &map1), None);
+
+    let map2: TileMap = HashMap::from([([1, 1], 0), ([1, 2], 0), ([1, 3], 0)]);
+    assert_eq!(explore_vertical_connection(&[1, 3], &[0, 2], &map2), None);
 }
