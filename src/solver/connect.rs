@@ -1,7 +1,9 @@
+use std::cmp::{max, min};
+
 use super::super::components::{
     Coord, CoordDelta, CoordDeltaElement, CoordElement, Grid, Nodes, TileMap,
 };
-use std::cmp::{max, min};
+use super::direction::{DOWN, LEFT, RIGHT, UP};
 
 fn get_size_from_map(map: &TileMap) -> [usize; 2] {
     map.keys()
@@ -76,7 +78,7 @@ fn is_vertical(grid: &Grid) -> bool {
 
 fn get_grid_xrange(grid: &Grid) -> [CoordElement; 2] {
     let &[[x1, _], [x2, _]] = grid;
-    if (x1 < x2) {
+    if x1 < x2 {
         [x1, x2]
     } else {
         [x2, x1]
@@ -85,7 +87,7 @@ fn get_grid_xrange(grid: &Grid) -> [CoordElement; 2] {
 
 fn get_grid_yrange(grid: &Grid) -> [CoordElement; 2] {
     let &[[_, y1], [_, y2]] = grid;
-    if (y1 < y2) {
+    if y1 < y2 {
         [y1, y2]
     } else {
         [y2, y1]
@@ -223,6 +225,32 @@ fn try_get_double_node_connection(
     None
 }
 
+fn try_get_triple_node_connection(
+    coord1: &Coord,
+    coord2: &Coord,
+    map: &TileMap,
+    map_size: &[usize; 2],
+) -> Option<Nodes> {
+    let (v_dir1, v_dir2) = match coord1[0] > coord2[0] {
+        true => (UP, DOWN),
+        false => (DOWN, UP),
+    };
+    let (h_dir1, h_dir2) = match coord1[1] > coord2[1] {
+        true => (LEFT, RIGHT),
+        false => (RIGHT, LEFT),
+    };
+
+    for (dir1, dir2) in [(v_dir1, h_dir2), (h_dir1, v_dir2)].iter() {
+        if let Some([grid1, grid2]) = get_grid_pair(coord1, coord2, dir1, dir2, map, map_size) {
+            if let Some(intersection) = get_intersection(&grid1, &grid2) {
+                return Some(vec![coord1.to_owned(), intersection, coord2.to_owned()]);
+            }
+        }
+    }
+
+    None
+}
+
 #[test]
 fn test_get_map_size() {
     use std::collections::HashMap;
@@ -239,17 +267,13 @@ fn test_get_map_size() {
 #[test]
 fn test_move_coord() {
     let map_size = [3, 4];
-    let move_up = [-1, 0];
-    let move_down = [1, 0];
-    let move_left = [0, -1];
-    let move_right = [0, 1];
 
-    assert_eq!(move_coord(&[1, 1], &move_down, &map_size), Some([2, 1]));
-    assert_eq!(move_coord(&[1, 1], &move_right, &map_size), Some([1, 2]));
-    assert_eq!(move_coord(&[1, 1], &move_up, &map_size), Some([0, 1]));
-    assert_eq!(move_coord(&[1, 1], &move_left, &map_size), Some([1, 0]));
-    assert_eq!(move_coord(&[0, 0], &move_up, &map_size), None);
-    assert_eq!(move_coord(&[0, 0], &move_left, &map_size), None);
+    assert_eq!(move_coord(&[1, 1], &DOWN, &map_size), Some([2, 1]));
+    assert_eq!(move_coord(&[1, 1], &RIGHT, &map_size), Some([1, 2]));
+    assert_eq!(move_coord(&[1, 1], &UP, &map_size), Some([0, 1]));
+    assert_eq!(move_coord(&[1, 1], &LEFT, &map_size), Some([1, 0]));
+    assert_eq!(move_coord(&[0, 0], &UP, &map_size), None);
+    assert_eq!(move_coord(&[0, 0], &LEFT, &map_size), None);
 }
 
 #[test]
@@ -262,45 +286,41 @@ fn test_get_grid() {
      */
     let map: TileMap = HashMap::from([([0, 1], 0), ([0, 3], 0), ([1, 0], 0), ([2, 3], 0)]);
     let map_size = get_size_from_map(&map);
-    let move_up = [-1, 0];
-    let move_down = [1, 0];
-    let move_left = [0, -1];
-    let move_right = [0, 1];
 
-    assert_eq!(get_grid(&[0, 2], &move_left, &map, &map_size), None);
-    assert_eq!(get_grid(&[0, 2], &move_right, &map, &map_size), None);
-    assert_eq!(get_grid(&[1, 3], &move_up, &map, &map_size), None);
-    assert_eq!(get_grid(&[1, 3], &move_down, &map, &map_size), None);
+    assert_eq!(get_grid(&[0, 2], &LEFT, &map, &map_size), None);
+    assert_eq!(get_grid(&[0, 2], &RIGHT, &map, &map_size), None);
+    assert_eq!(get_grid(&[1, 3], &UP, &map, &map_size), None);
+    assert_eq!(get_grid(&[1, 3], &DOWN, &map, &map_size), None);
     assert_eq!(
-        get_grid(&[0, 3], &move_left, &map, &map_size),
+        get_grid(&[0, 3], &LEFT, &map, &map_size),
         Some([[0, 3], [0, 2]])
     );
     assert_eq!(
-        get_grid(&[0, 1], &move_right, &map, &map_size),
+        get_grid(&[0, 1], &RIGHT, &map, &map_size),
         Some([[0, 1], [0, 2]])
     );
     assert_eq!(
-        get_grid(&[2, 3], &move_up, &map, &map_size),
+        get_grid(&[2, 3], &UP, &map, &map_size),
         Some([[2, 3], [1, 3]])
     );
     assert_eq!(
-        get_grid(&[0, 3], &move_down, &map, &map_size),
+        get_grid(&[0, 3], &DOWN, &map, &map_size),
         Some([[0, 3], [1, 3]])
     );
     assert_eq!(
-        get_grid(&[1, 2], &move_left, &map, &map_size),
+        get_grid(&[1, 2], &LEFT, &map, &map_size),
         Some([[1, 2], [1, 1]])
     );
     assert_eq!(
-        get_grid(&[1, 2], &move_right, &map, &map_size),
+        get_grid(&[1, 2], &RIGHT, &map, &map_size),
         Some([[1, 2], [1, 3]])
     );
     assert_eq!(
-        get_grid(&[1, 2], &move_up, &map, &map_size),
+        get_grid(&[1, 2], &UP, &map, &map_size),
         Some([[1, 2], [0, 2]])
     );
     assert_eq!(
-        get_grid(&[1, 2], &move_down, &map, &map_size),
+        get_grid(&[1, 2], &DOWN, &map, &map_size),
         Some([[1, 2], [2, 2]])
     );
 }
@@ -569,4 +589,48 @@ fn test_try_get_double_node_connection() {
     assert_eq!(try_get_double_node_connection(&[1, 0], &[1, 2], &map), None);
     assert_eq!(try_get_double_node_connection(&[0, 1], &[2, 1], &map), None);
     assert_eq!(try_get_double_node_connection(&[0, 0], &[2, 2], &map), None);
+}
+
+#[test]
+fn test_try_get_triple_node_connection() {
+    use std::collections::HashMap;
+    /*
+     * x x x
+     * x 0 x
+     * x x 0
+     */
+    let map1: TileMap = HashMap::from([([1, 1], 0), ([2, 2], 0)]);
+    let map_size = [3, 3];
+
+    assert_eq!(
+        try_get_triple_node_connection(&[0, 1], &[1, 0], &map1, &map_size),
+        Some(vec![[0, 1], [0, 0], [1, 0]])
+    );
+    assert_eq!(
+        try_get_triple_node_connection(&[0, 2], &[2, 0], &map1, &map_size),
+        Some(vec![[0, 2], [0, 0], [2, 0]])
+    );
+    assert_eq!(
+        try_get_triple_node_connection(&[1, 2], &[2, 1], &map1, &map_size),
+        None
+    );
+
+    /*
+     * 0 x x
+     * x 0 x
+     * x x x
+     */
+    let map2: TileMap = HashMap::from([([0, 0], 0), ([1, 1], 0)]);
+    assert_eq!(
+        try_get_triple_node_connection(&[0, 1], &[1, 0], &map2, &map_size),
+        None
+    );
+    assert_eq!(
+        try_get_triple_node_connection(&[0, 2], &[2, 0], &map2, &map_size),
+        Some(vec![[0, 2], [2, 2], [2, 0]])
+    );
+    assert_eq!(
+        try_get_triple_node_connection(&[1, 2], &[2, 1], &map2, &map_size),
+        Some(vec![[1, 2], [2, 2], [2, 1]])
+    );
 }
