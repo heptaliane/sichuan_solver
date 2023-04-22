@@ -56,6 +56,24 @@ fn is_vertical(grid: &Grid) -> bool {
     grid[0][1] == grid[1][1]
 }
 
+fn get_grid_xrange(grid: &Grid) -> [CoordElement; 2] {
+    let &[[x1, _], [x2, _]] = grid;
+    if (x1 < x2) {
+        [x1, x2]
+    } else {
+        [x2, x1]
+    }
+}
+
+fn get_grid_yrange(grid: &Grid) -> [CoordElement; 2] {
+    let &[[_, y1], [_, y2]] = grid;
+    if (y1 < y2) {
+        [y1, y2]
+    } else {
+        [y2, y1]
+    }
+}
+
 fn get_intersection(grid1: &Grid, grid2: &Grid) -> Option<Coord> {
     match (grid1, grid2) {
         (g1, g2) if is_horizonal(g1) && is_vertical(g2) => match (g1[0][0], g2[0][1]) {
@@ -108,6 +126,40 @@ fn explore_vertical_connection(
         }
     }
     None
+}
+
+fn is_tile_touched(coord1: &Coord, coord2: &Coord) -> bool {
+    match (coord1, coord2) {
+        (&[x1, y1], &[x2, y2]) if x1 == x2 => (y1 == y2 + 1) || (y1 + 1 == y2),
+        (&[x1, y1], &[x2, y2]) if y1 == y2 => (x1 == x2 + 1) || (x1 + 1 == x2),
+        _ => false,
+    }
+}
+
+fn get_overwrapped_xrange(grid1: &Grid, grid2: &Grid) -> Option<[CoordElement; 2]> {
+    let [xmin1, xmax1] = get_grid_xrange(grid1);
+    let [xmin2, xmax2] = get_grid_xrange(grid2);
+    let xmax = min(xmax1, xmax2);
+    let xmin = max(xmin1, xmin2);
+
+    if xmax < xmin {
+        None
+    } else {
+        Some([xmin, xmax])
+    }
+}
+
+fn get_overwrapped_yrange(grid1: &Grid, grid2: &Grid) -> Option<[CoordElement; 2]> {
+    let [ymin1, ymax1] = get_grid_yrange(grid1);
+    let [ymin2, ymax2] = get_grid_yrange(grid2);
+    let ymax = min(ymax1, ymax2);
+    let ymin = max(ymin1, ymin2);
+
+    if ymax < ymin {
+        None
+    } else {
+        Some([ymin, ymax])
+    }
 }
 
 #[test]
@@ -215,6 +267,40 @@ fn test_is_vertical() {
 }
 
 #[test]
+fn test_get_grid_xrange() {
+    let grid1a = [[0, 0], [0, 1]];
+    let grid1b = [[0, 1], [0, 0]];
+    let grid2a = [[0, 0], [1, 0]];
+    let grid2b = [[1, 0], [0, 0]];
+    let grid3a = [[0, 0], [1, 1]];
+    let grid3b = [[1, 1], [0, 0]];
+
+    assert_eq!(get_grid_xrange(&grid1a), [0, 0]);
+    assert_eq!(get_grid_xrange(&grid1b), [0, 0]);
+    assert_eq!(get_grid_xrange(&grid2a), [0, 1]);
+    assert_eq!(get_grid_xrange(&grid2b), [0, 1]);
+    assert_eq!(get_grid_xrange(&grid3a), [0, 1]);
+    assert_eq!(get_grid_xrange(&grid3b), [0, 1]);
+}
+
+#[test]
+fn test_get_grid_yrange() {
+    let grid1a = [[0, 0], [0, 1]];
+    let grid1b = [[0, 1], [0, 0]];
+    let grid2a = [[0, 0], [1, 0]];
+    let grid2b = [[1, 0], [0, 0]];
+    let grid3a = [[0, 0], [1, 1]];
+    let grid3b = [[1, 1], [0, 0]];
+
+    assert_eq!(get_grid_yrange(&grid1a), [0, 1]);
+    assert_eq!(get_grid_yrange(&grid1b), [0, 1]);
+    assert_eq!(get_grid_yrange(&grid2a), [0, 0]);
+    assert_eq!(get_grid_yrange(&grid2b), [0, 0]);
+    assert_eq!(get_grid_yrange(&grid3a), [0, 1]);
+    assert_eq!(get_grid_yrange(&grid3b), [0, 1]);
+}
+
+#[test]
 fn test_get_intersection() {
     let check_all = |grid1: Grid, grid2: Grid, expected: Option<Coord>| {
         for [g1, g2] in [[grid1, grid2], [grid2, grid1]] {
@@ -280,4 +366,63 @@ fn test_explore_vertical_connection() {
 
     let map2: TileMap = HashMap::from([([1, 1], 0), ([1, 2], 0), ([1, 3], 0)]);
     assert_eq!(explore_vertical_connection(&[1, 3], &[0, 2], &map2), None);
+}
+
+#[test]
+fn test_is_tile_touched() {
+    assert!(is_tile_touched(&[0, 0], &[1, 0]));
+    assert!(is_tile_touched(&[1, 0], &[0, 0]));
+    assert!(is_tile_touched(&[1, 1], &[1, 0]));
+    assert!(is_tile_touched(&[1, 0], &[1, 1]));
+    assert!(!is_tile_touched(&[0, 0], &[1, 1]));
+    assert!(!is_tile_touched(&[0, 0], &[0, 2]));
+    assert!(!is_tile_touched(&[0, 2], &[0, 0]));
+    assert!(!is_tile_touched(&[0, 0], &[2, 0]));
+    assert!(!is_tile_touched(&[2, 0], &[0, 0]));
+}
+
+#[test]
+fn test_get_overwrapped_xrange() {
+    let check_all = |grid1: Grid, grid2: Grid, expected: Option<[CoordElement; 2]>| {
+        for (g1, g2) in [(grid1, grid2), (grid2, grid1)] {
+            for ga in [g1, [g1[1], g1[0]]] {
+                for gb in [g2, [g2[1], g2[0]]] {
+                    assert_eq!(get_overwrapped_xrange(&ga, &gb), expected);
+                }
+            }
+        }
+    };
+
+    check_all([[0, 0], [1, 0]], [[1, 0], [2, 0]], Some([1, 1]));
+    check_all([[0, 0], [2, 0]], [[1, 0], [2, 0]], Some([1, 2]));
+    check_all([[0, 0], [2, 0]], [[1, 0], [3, 0]], Some([1, 2]));
+    check_all([[0, 0], [1, 0]], [[2, 0], [3, 0]], None);
+    check_all([[0, 0], [0, 1]], [[1, 2], [2, 2]], None);
+    check_all([[0, 0], [0, 1]], [[0, 1], [0, 2]], Some([0, 0]));
+    check_all([[0, 0], [0, 2]], [[0, 1], [0, 2]], Some([0, 0]));
+    check_all([[0, 0], [0, 2]], [[0, 1], [0, 3]], Some([0, 0]));
+    check_all([[0, 0], [0, 1]], [[0, 2], [0, 3]], Some([0, 0]));
+}
+
+#[test]
+fn test_get_overlapped_yrange() {
+    let check_all = |grid1: Grid, grid2: Grid, expected: Option<[CoordElement; 2]>| {
+        for (g1, g2) in [(grid1, grid2), (grid2, grid1)] {
+            for ga in [g1, [g1[1], g1[0]]] {
+                for gb in [g2, [g2[1], g2[0]]] {
+                    assert_eq!(get_overwrapped_yrange(&ga, &gb), expected);
+                }
+            }
+        }
+    };
+
+    check_all([[0, 0], [1, 0]], [[1, 0], [2, 0]], Some([0, 0]));
+    check_all([[0, 0], [2, 0]], [[1, 0], [2, 0]], Some([0, 0]));
+    check_all([[0, 0], [2, 0]], [[1, 0], [3, 0]], Some([0, 0]));
+    check_all([[0, 0], [1, 0]], [[2, 0], [3, 0]], Some([0, 0]));
+    check_all([[0, 0], [0, 1]], [[1, 2], [2, 2]], None);
+    check_all([[0, 0], [0, 1]], [[0, 1], [0, 2]], Some([1, 1]));
+    check_all([[0, 0], [0, 2]], [[0, 1], [0, 2]], Some([1, 2]));
+    check_all([[0, 0], [0, 2]], [[0, 1], [0, 3]], Some([1, 2]));
+    check_all([[0, 0], [0, 1]], [[0, 2], [0, 3]], None);
 }
