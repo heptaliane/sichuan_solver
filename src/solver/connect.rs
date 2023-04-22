@@ -1,4 +1,6 @@
-use super::super::components::{Coord, CoordDelta, CoordDeltaElement, CoordElement, Grid, TileMap};
+use super::super::components::{
+    Coord, CoordDelta, CoordDeltaElement, CoordElement, Grid, Nodes, TileMap,
+};
 use std::cmp::{max, min};
 
 fn get_size_from_map(map: &TileMap) -> [usize; 2] {
@@ -48,6 +50,22 @@ fn get_grid(
     }
 }
 
+fn get_grid_pair(
+    coord1: &Coord,
+    coord2: &Coord,
+    direction1: &CoordDelta,
+    direction2: &CoordDelta,
+    map: &TileMap,
+    map_size: &[usize; 2],
+) -> Option<[Grid; 2]> {
+    let grid1 = get_grid(coord1, direction1, map, map_size);
+    let grid2 = get_grid(coord2, direction2, map, map_size);
+    match (grid1, grid2) {
+        (Some(g1), Some(g2)) => Some([g1, g2]),
+        _ => None,
+    }
+}
+
 fn is_horizonal(grid: &Grid) -> bool {
     grid[0][0] == grid[1][0]
 }
@@ -94,21 +112,35 @@ fn get_intersection(grid1: &Grid, grid2: &Grid) -> Option<Coord> {
     }
 }
 
+fn can_horizontal_connect(
+    y1: CoordElement,
+    y2: CoordElement,
+    x: CoordElement,
+    map: &TileMap,
+) -> bool {
+    (y1..=y2).all(|y| map.get(&[x, y]) == None)
+}
+
 fn explore_horizontal_connection(
     xrange: &[CoordElement; 2],
     yaxis: &[CoordElement; 2],
     map: &TileMap,
 ) -> Option<Grid> {
     for x in xrange[0]..=xrange[1] {
-        match (yaxis[0]..=yaxis[1])
-            .map(|y| map.get(&[x, y]) == None)
-            .all(|flg| flg)
-        {
-            true => return Some([[x, yaxis[0]], [x, yaxis[1]]]),
-            _ => (),
+        if can_horizontal_connect(yaxis[0], yaxis[1], x, map) {
+            return Some([[x, yaxis[0]], [x, yaxis[1]]]);
         }
     }
     None
+}
+
+fn can_vertical_connect(
+    x1: CoordElement,
+    x2: CoordElement,
+    y: CoordElement,
+    map: &TileMap,
+) -> bool {
+    (x1..=x2).all(|x| map.get(&[x, y]) == None)
 }
 
 fn explore_vertical_connection(
@@ -117,18 +149,14 @@ fn explore_vertical_connection(
     map: &TileMap,
 ) -> Option<Grid> {
     for y in yrange[0]..=yrange[1] {
-        match (xaxis[0]..=xaxis[1])
-            .map(|x| map.get(&[x, y]) == None)
-            .all(|flg| flg)
-        {
-            true => return Some([[xaxis[0], y], [xaxis[1], y]]),
-            _ => (),
+        if can_vertical_connect(xaxis[0], xaxis[1], y, map) {
+            return Some([[xaxis[0], y], [xaxis[1], y]]);
         }
     }
     None
 }
 
-fn is_tile_touched(coord1: &Coord, coord2: &Coord) -> bool {
+fn is_tile_adjacent(coord1: &Coord, coord2: &Coord) -> bool {
     match (coord1, coord2) {
         (&[x1, y1], &[x2, y2]) if x1 == x2 => (y1 == y2 + 1) || (y1 + 1 == y2),
         (&[x1, y1], &[x2, y2]) if y1 == y2 => (x1 == x2 + 1) || (x1 + 1 == x2),
@@ -172,6 +200,27 @@ fn is_connected_with_single_line(grid1: &Grid, grid2: &Grid) -> bool {
         }
         _ => false,
     }
+}
+
+fn try_get_double_node_connection(
+    &coord1: &Coord,
+    &coord2: &Coord,
+    map: &TileMap,
+) -> Option<Nodes> {
+    let nodes = vec![coord1, coord2];
+    if is_tile_adjacent(&coord1, &coord2) {
+        return Some(nodes);
+    }
+
+    if coord1[0] == coord2[0] && can_horizontal_connect(coord1[1], coord2[1], coord1[0], map) {
+        return Some(nodes);
+    }
+
+    if coord1[1] == coord2[1] && can_vertical_connect(coord1[0], coord2[0], coord1[1], map) {
+        return Some(nodes);
+    }
+
+    None
 }
 
 #[test]
@@ -382,15 +431,15 @@ fn test_explore_vertical_connection() {
 
 #[test]
 fn test_is_tile_touched() {
-    assert!(is_tile_touched(&[0, 0], &[1, 0]));
-    assert!(is_tile_touched(&[1, 0], &[0, 0]));
-    assert!(is_tile_touched(&[1, 1], &[1, 0]));
-    assert!(is_tile_touched(&[1, 0], &[1, 1]));
-    assert!(!is_tile_touched(&[0, 0], &[1, 1]));
-    assert!(!is_tile_touched(&[0, 0], &[0, 2]));
-    assert!(!is_tile_touched(&[0, 2], &[0, 0]));
-    assert!(!is_tile_touched(&[0, 0], &[2, 0]));
-    assert!(!is_tile_touched(&[2, 0], &[0, 0]));
+    assert!(is_tile_adjacent(&[0, 0], &[1, 0]));
+    assert!(is_tile_adjacent(&[1, 0], &[0, 0]));
+    assert!(is_tile_adjacent(&[1, 1], &[1, 0]));
+    assert!(is_tile_adjacent(&[1, 0], &[1, 1]));
+    assert!(!is_tile_adjacent(&[0, 0], &[1, 1]));
+    assert!(!is_tile_adjacent(&[0, 0], &[0, 2]));
+    assert!(!is_tile_adjacent(&[0, 2], &[0, 0]));
+    assert!(!is_tile_adjacent(&[0, 0], &[2, 0]));
+    assert!(!is_tile_adjacent(&[2, 0], &[0, 0]));
 }
 
 #[test]
@@ -489,4 +538,35 @@ fn test_is_connect_with_single_line() {
         &[[0, 1], [0, 2]],
         &[[0, 0], [1, 0]]
     ));
+}
+
+#[test]
+fn test_try_get_double_node_connection() {
+    use std::collections::HashMap;
+    /*
+     * x x x
+     * x 0 x
+     * x x x
+     */
+    let map: TileMap = HashMap::from([([1, 1], 0)]);
+
+    assert_eq!(
+        try_get_double_node_connection(&[0, 0], &[0, 2], &map),
+        Some(vec![[0, 0], [0, 2]])
+    );
+    assert_eq!(
+        try_get_double_node_connection(&[0, 0], &[2, 0], &map),
+        Some(vec![[0, 0], [2, 0]])
+    );
+    assert_eq!(
+        try_get_double_node_connection(&[0, 0], &[0, 1], &map),
+        Some(vec![[0, 0], [0, 1]])
+    );
+    assert_eq!(
+        try_get_double_node_connection(&[0, 0], &[1, 0], &map),
+        Some(vec![[0, 0], [1, 0]])
+    );
+    assert_eq!(try_get_double_node_connection(&[1, 0], &[1, 2], &map), None);
+    assert_eq!(try_get_double_node_connection(&[0, 1], &[2, 1], &map), None);
+    assert_eq!(try_get_double_node_connection(&[0, 0], &[2, 2], &map), None);
 }
