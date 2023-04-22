@@ -78,19 +78,19 @@ fn is_vertical(grid: &Grid) -> bool {
 
 fn get_grid_xrange(grid: &Grid) -> [CoordElement; 2] {
     let &[[x1, _], [x2, _]] = grid;
-    if x1 < x2 {
-        [x1, x2]
-    } else {
-        [x2, x1]
+
+    match x1 < x2 {
+        true => [x1, x2],
+        false => [x2, x1],
     }
 }
 
 fn get_grid_yrange(grid: &Grid) -> [CoordElement; 2] {
     let &[[_, y1], [_, y2]] = grid;
-    if y1 < y2 {
-        [y1, y2]
-    } else {
-        [y2, y1]
+
+    match y1 < y2 {
+        true => [y1, y2],
+        false => [y2, y1],
     }
 }
 
