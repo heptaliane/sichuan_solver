@@ -118,9 +118,17 @@ fn can_horizontal_connect(
     y1: CoordElement,
     y2: CoordElement,
     x: CoordElement,
+    ignore_edge: bool,
     map: &TileMap,
 ) -> bool {
-    (y1..=y2).all(|y| map.get(&[x, y]) == None)
+    match ignore_edge {
+        true => match y1 < y2 {
+            true => (y1 + 1)..y2,
+            false => (y2 + 1)..y1,
+        },
+        false => y1..(y2 + 1),
+    }
+    .all(|y| !map.contains_key(&[x, y]))
 }
 
 fn explore_horizontal_connection(
@@ -129,7 +137,7 @@ fn explore_horizontal_connection(
     map: &TileMap,
 ) -> Option<Grid> {
     for x in xrange[0]..=xrange[1] {
-        if can_horizontal_connect(yaxis[0], yaxis[1], x, map) {
+        if can_horizontal_connect(yaxis[0], yaxis[1], x, false, map) {
             return Some([[x, yaxis[0]], [x, yaxis[1]]]);
         }
     }
@@ -140,9 +148,17 @@ fn can_vertical_connect(
     x1: CoordElement,
     x2: CoordElement,
     y: CoordElement,
+    ignore_edge: bool,
     map: &TileMap,
 ) -> bool {
-    (x1..=x2).all(|x| map.get(&[x, y]) == None)
+    match ignore_edge {
+        true => match x1 < x2 {
+            true => (x1 + 1)..x2,
+            false => (x2 + 1)..x1,
+        },
+        false => x1..(x2 + 1),
+    }
+    .all(|x| !map.contains_key(&[x, y]))
 }
 
 fn explore_vertical_connection(
@@ -151,7 +167,7 @@ fn explore_vertical_connection(
     map: &TileMap,
 ) -> Option<Grid> {
     for y in yrange[0]..=yrange[1] {
-        if can_vertical_connect(xaxis[0], xaxis[1], y, map) {
+        if can_vertical_connect(xaxis[0], xaxis[1], y, false, map) {
             return Some([[xaxis[0], y], [xaxis[1], y]]);
         }
     }
@@ -214,11 +230,12 @@ fn try_get_double_node_connection(
         return Some(nodes);
     }
 
-    if coord1[0] == coord2[0] && can_horizontal_connect(coord1[1], coord2[1], coord1[0], map) {
+    if coord1[0] == coord2[0] && can_horizontal_connect(coord1[1], coord2[1], coord1[0], true, map)
+    {
         return Some(nodes);
     }
 
-    if coord1[1] == coord2[1] && can_vertical_connect(coord1[0], coord2[0], coord1[1], map) {
+    if coord1[1] == coord2[1] && can_vertical_connect(coord1[0], coord2[0], coord1[1], true, map) {
         return Some(nodes);
     }
 
@@ -613,6 +630,10 @@ fn test_try_get_triple_node_connection() {
     assert_eq!(
         try_get_triple_node_connection(&[1, 2], &[2, 1], &map1, &map_size),
         None
+    );
+    assert_eq!(
+        try_get_triple_node_connection(&[1, 1], &[2, 2], &map1, &map_size),
+        Some(vec![[1, 1], [2, 1], [2, 2]])
     );
 
     /*
