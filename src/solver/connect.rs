@@ -847,4 +847,48 @@ fn test_try_get_quadro_node_connection() {
         try_get_quadro_node_connection(&coord8b, &coord8a, &map8, &map_size),
         reverse(expected8)
     );
+
+    let map9 = HashMap::from([([0, 0], 1), ([0, 1], 0), ([1, 0], 0), ([1, 1], 1)]);
+    let (coord9a, coord9b) = ([0, 0], [1, 1]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord9a, &coord9b, &map9, &map_size),
+        None
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord9b, &coord9a, &map9, &map_size),
+        None
+    );
+
+    let map10 = HashMap::from([([0, 1], 0), ([0, 2], 1), ([1, 1], 1), ([1, 2], 0)]);
+    let (coord10a, coord10b) = ([0, 1], [1, 2]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord10a, &coord10b, &map10, &map_size),
+        None
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord10b, &coord10a, &map10, &map_size),
+        None
+    );
+
+    let map11 = HashMap::from([([1, 0], 0), ([1, 1], 1), ([2, 0], 1), ([2, 1], 0)]);
+    let (coord11a, coord11b) = ([1, 0], [2, 1]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord11a, &coord11b, &map11, &map_size),
+        None
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord11b, &coord11a, &map11, &map_size),
+        None
+    );
+
+    let map12 = HashMap::from([([1, 1], 1), ([1, 2], 0), ([2, 1], 0), ([2, 2], 1)]);
+    let (coord12a, coord12b) = ([1, 2], [2, 1]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord12a, &coord12b, &map12, &map_size),
+        None
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord12b, &coord12a, &map12, &map_size),
+        None
+    );
 }
