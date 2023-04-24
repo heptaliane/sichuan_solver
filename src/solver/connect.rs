@@ -121,12 +121,13 @@ fn can_horizontal_connect(
     ignore_edge: bool,
     map: &TileMap,
 ) -> bool {
+    let (ymin, ymax) = match y1 < y2 {
+        true => (y1, y2),
+        false => (y2, y1),
+    };
     match ignore_edge {
-        true => match y1 < y2 {
-            true => (y1 + 1)..y2,
-            false => (y2 + 1)..y1,
-        },
-        false => y1..(y2 + 1),
+        true => (ymin + 1)..ymax,
+        false => ymin..(ymax + 1),
     }
     .all(|y| !map.contains_key(&[x, y]))
 }
@@ -151,12 +152,13 @@ fn can_vertical_connect(
     ignore_edge: bool,
     map: &TileMap,
 ) -> bool {
+    let (xmin, xmax) = match x1 < x2 {
+        true => (x1, x2),
+        false => (x2, x1),
+    };
     match ignore_edge {
-        true => match x1 < x2 {
-            true => (x1 + 1)..x2,
-            false => (x2 + 1)..x1,
-        },
-        false => x1..(x2 + 1),
+        true => (xmin + 1)..xmax,
+        false => xmin..(xmax + 1),
     }
     .all(|x| !map.contains_key(&[x, y]))
 }
@@ -338,7 +340,7 @@ fn try_get_quadro_node_connection(
         false => get_grid_pair(coord1, coord2, &RIGHT, &LEFT, map, map_size),
     } {
         if let Some(yrange) = get_overwrapped_yrange(&grid1, &grid2) {
-            let grid = explore_horizontal_connection(&yrange, &xaxis, map);
+            let grid = explore_vertical_connection(&yrange, &xaxis, map);
             if let Some([coord1b, coord2b]) = grid {
                 return Some(vec![coord1.to_owned(), coord1b, coord2b, coord2.to_owned()]);
             }
