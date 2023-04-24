@@ -268,6 +268,86 @@ fn try_get_triple_node_connection(
     None
 }
 
+fn try_get_quadro_node_connection(
+    coord1: &Coord,
+    coord2: &Coord,
+    map: &TileMap,
+    map_size: &[usize; 2],
+) -> Option<Nodes> {
+    let xaxis = [coord1[0], coord2[0]];
+    let yaxis = [coord1[1], coord2[1]];
+
+    /*
+     * | x |   o x x
+     * o x |   | x o
+     * x x o   | x |
+     */
+    for direction in [UP, DOWN].iter() {
+        let grids = get_grid_pair(coord1, coord2, direction, direction, map, map_size);
+        if let Some([grid1, grid2]) = grids {
+            if let Some(xrange) = get_overwrapped_xrange(&grid1, &grid2) {
+                let grid = explore_horizontal_connection(&xrange, &yaxis, map);
+                if let Some([coord1b, coord2b]) = grid {
+                    return Some(vec![coord1.to_owned(), coord1b, coord2b, coord2.to_owned()]);
+                }
+            }
+        }
+    }
+
+    /*
+     * o - -   - - o
+     * x x x   x x x
+     * x o -   - o x
+     */
+    for direction in [LEFT, RIGHT].iter() {
+        let grids = get_grid_pair(coord1, coord2, direction, direction, map, map_size);
+        if let Some([grid1, grid2]) = grids {
+            if let Some(yrange) = get_overwrapped_yrange(&grid1, &grid2) {
+                let grid = explore_vertical_connection(&yrange, &xaxis, map);
+                if let Some([coord1b, coord2b]) = grid {
+                    return Some(vec![coord1.to_owned(), coord1b, coord2b, coord2.to_owned()]);
+                }
+            }
+        }
+    }
+
+    /*
+     * | x o
+     * | x |
+     * o x |
+     */
+    if let Some([grid1, grid2]) = match coord1[0] > coord2[0] {
+        true => get_grid_pair(coord1, coord2, &UP, &DOWN, map, map_size),
+        false => get_grid_pair(coord1, coord2, &DOWN, &UP, map, map_size),
+    } {
+        if let Some(xrange) = get_overwrapped_xrange(&grid1, &grid2) {
+            let grid = explore_horizontal_connection(&xrange, &yaxis, map);
+            if let Some([coord1b, coord2b]) = grid {
+                return Some(vec![coord1.to_owned(), coord1b, coord2b, coord2.to_owned()]);
+            }
+        }
+    }
+
+    /*
+     * - - o
+     * x x x
+     * o - -
+     */
+    if let Some([grid1, grid2]) = match coord1[1] > coord2[1] {
+        true => get_grid_pair(coord1, coord2, &LEFT, &RIGHT, map, map_size),
+        false => get_grid_pair(coord1, coord2, &RIGHT, &LEFT, map, map_size),
+    } {
+        if let Some(yrange) = get_overwrapped_yrange(&grid1, &grid2) {
+            let grid = explore_horizontal_connection(&yrange, &xaxis, map);
+            if let Some([coord1b, coord2b]) = grid {
+                return Some(vec![coord1.to_owned(), coord1b, coord2b, coord2.to_owned()]);
+            }
+        }
+    }
+
+    None
+}
+
 #[test]
 fn test_get_map_size() {
     use std::collections::HashMap;
@@ -653,5 +733,116 @@ fn test_try_get_triple_node_connection() {
     assert_eq!(
         try_get_triple_node_connection(&[1, 2], &[2, 1], &map2, &map_size),
         Some(vec![[1, 2], [2, 2], [2, 1]])
+    );
+}
+
+#[test]
+fn test_try_get_quadro_node_connection() {
+    use std::collections::HashMap;
+    let map_size = [3, 3];
+
+    let reverse = |nodes: Option<Nodes>| match nodes {
+        Some(arr) => {
+            let mut reversed = arr.clone();
+            reversed.reverse();
+            Some(reversed)
+        }
+        None => None,
+    };
+
+    let map1 = HashMap::from([([0, 0], 0), ([0, 1], 1), ([1, 1], 1), ([1, 2], 0)]);
+    let (coord1a, coord1b) = ([0, 0], [1, 2]);
+    let expected1 = Some(vec![[0, 0], [2, 0], [2, 2], [1, 2]]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord1a, &coord1b, &map1, &map_size),
+        expected1
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord1b, &coord1a, &map1, &map_size),
+        reverse(expected1)
+    );
+
+    let map2 = HashMap::from([([1, 1], 1), ([1, 2], 0), ([2, 0], 0), ([2, 1], 1)]);
+    let (coord2a, coord2b) = ([2, 0], [1, 2]);
+    let expected2 = Some(vec![[2, 0], [0, 0], [0, 2], [1, 2]]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord2a, &coord2b, &map2, &map_size),
+        expected2
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord2b, &coord2a, &map2, &map_size),
+        reverse(expected2)
+    );
+
+    let map3 = HashMap::from([([0, 0], 0), ([1, 0], 1), ([1, 1], 1), ([2, 1], 0)]);
+    let (coord3a, coord3b) = ([0, 0], [2, 1]);
+    let expected3 = Some(vec![[0, 0], [0, 2], [2, 2], [2, 1]]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord3a, &coord3b, &map3, &map_size),
+        expected3
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord3b, &coord3a, &map3, &map_size),
+        reverse(expected3)
+    );
+
+    let map4 = HashMap::from([([0, 2], 0), ([1, 1], 1), ([1, 2], 1), ([2, 1], 0)]);
+    let (coord4a, coord4b) = ([0, 2], [2, 1]);
+    let expected4 = Some(vec![[0, 2], [0, 0], [2, 0], [2, 1]]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord4a, &coord4b, &map4, &map_size),
+        expected4
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord4b, &coord4a, &map4, &map_size),
+        reverse(expected4)
+    );
+
+    let map5 = HashMap::from([([0, 2], 0), ([1, 0], 1), ([1, 2], 1), ([2, 0], 0)]);
+    let (coord5a, coord5b) = ([0, 2], [2, 0]);
+    let expected5 = Some(vec![[0, 2], [0, 1], [2, 1], [2, 0]]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord5a, &coord5b, &map5, &map_size),
+        expected5
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord5b, &coord5a, &map5, &map_size),
+        reverse(expected5)
+    );
+
+    let map6 = HashMap::from([([0, 0], 0), ([1, 0], 1), ([1, 2], 1), ([2, 2], 0)]);
+    let (coord6a, coord6b) = ([0, 0], [2, 2]);
+    let expected6 = Some(vec![[0, 0], [0, 1], [2, 1], [2, 2]]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord6a, &coord6b, &map6, &map_size),
+        expected6
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord6b, &coord6a, &map6, &map_size),
+        reverse(expected6)
+    );
+
+    let map7 = HashMap::from([([0, 2], 0), ([0, 1], 1), ([2, 1], 1), ([2, 0], 0)]);
+    let (coord7a, coord7b) = ([0, 2], [2, 0]);
+    let expected7 = Some(vec![[0, 2], [1, 2], [1, 0], [2, 0]]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord7a, &coord7b, &map7, &map_size),
+        expected7
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord7b, &coord7a, &map7, &map_size),
+        reverse(expected7)
+    );
+
+    let map8 = HashMap::from([([0, 0], 0), ([0, 1], 1), ([2, 1], 1), ([2, 2], 0)]);
+    let (coord8a, coord8b) = ([0, 0], [2, 2]);
+    let expected8 = Some(vec![[0, 0], [1, 0], [1, 2], [2, 2]]);
+    assert_eq!(
+        try_get_quadro_node_connection(&coord8a, &coord8b, &map8, &map_size),
+        expected8
+    );
+    assert_eq!(
+        try_get_quadro_node_connection(&coord8b, &coord8a, &map8, &map_size),
+        reverse(expected8)
     );
 }
