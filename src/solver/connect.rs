@@ -350,6 +350,25 @@ fn try_get_quadro_node_connection(
     None
 }
 
+pub fn try_get_node_connection(
+    coord1: &Coord,
+    coord2: &Coord,
+    map: &TileMap,
+    map_size: &[usize; 2],
+) -> Option<Nodes> {
+    let double_node_connection = try_get_double_node_connection(coord1, coord2, map);
+    if double_node_connection != None {
+        return double_node_connection;
+    }
+
+    let triple_node_connection = try_get_triple_node_connection(coord1, coord2, map, map_size);
+    if triple_node_connection != None {
+        return triple_node_connection;
+    }
+
+    try_get_quadro_node_connection(coord1, coord2, map, map_size)
+}
+
 #[test]
 fn test_get_map_size() {
     use std::collections::HashMap;
@@ -890,5 +909,160 @@ fn test_try_get_quadro_node_connection() {
     assert_eq!(
         try_get_quadro_node_connection(&coord12b, &coord12a, &map12, &map_size),
         None
+    );
+}
+
+#[test]
+fn test_try_get_node_connection() {
+    use std::collections::HashMap;
+    /*
+     * x x x x
+     * x 0 0 x
+     * x 1 x x
+     * x x x 1
+     */
+    let map: TileMap = HashMap::from([([1, 1], 0), ([1, 2], 0), ([2, 1], 1), ([3, 3], 1)]);
+    let map_size = [4, 4];
+
+    let reverse = |nodes: Option<Nodes>| match nodes {
+        Some(arr) => {
+            let mut reversed = arr.clone();
+            reversed.reverse();
+            Some(reversed)
+        }
+        None => None,
+    };
+
+    let (coord1a, coord1b) = ([1, 1], [1, 2]);
+    let expected1 = Some(vec![coord1a, coord1b]);
+    assert_eq!(
+        try_get_node_connection(&coord1a, &coord1b, &map, &map_size),
+        expected1
+    );
+    assert_eq!(
+        try_get_node_connection(&coord1b, &coord1a, &map, &map_size),
+        reverse(expected1)
+    );
+
+    let (coord2a, coord2b) = ([0, 0], [1, 0]);
+    let expected2 = Some(vec![coord2a, coord2b]);
+    assert_eq!(
+        try_get_node_connection(&coord2a, &coord2b, &map, &map_size),
+        expected2
+    );
+    assert_eq!(
+        try_get_node_connection(&coord2b, &coord2a, &map, &map_size),
+        reverse(expected2)
+    );
+
+    let (coord3a, coord3b) = ([0, 0], [0, 3]);
+    let expected3 = Some(vec![coord3a, coord3b]);
+    assert_eq!(
+        try_get_node_connection(&coord3a, &coord3b, &map, &map_size),
+        expected3
+    );
+    assert_eq!(
+        try_get_node_connection(&coord3b, &coord3a, &map, &map_size),
+        reverse(expected3)
+    );
+
+    let (coord4a, coord4b) = ([0, 0], [3, 0]);
+    let expected4 = Some(vec![coord4a, coord4b]);
+    assert_eq!(
+        try_get_node_connection(&coord4a, &coord4b, &map, &map_size),
+        expected4
+    );
+    assert_eq!(
+        try_get_node_connection(&coord4b, &coord4a, &map, &map_size),
+        reverse(expected4)
+    );
+
+    let (coord5a, coord5b) = ([2, 1], [3, 3]);
+    let expected5a = Some(vec![coord5a, [3, 1], coord5b]);
+    let expected5b = Some(vec![coord5b, [2, 3], coord5a]);
+    assert_eq!(
+        try_get_node_connection(&coord5a, &coord5b, &map, &map_size),
+        expected5a
+    );
+    assert_eq!(
+        try_get_node_connection(&coord5b, &coord5a, &map, &map_size),
+        expected5b
+    );
+
+    let (coord6a, coord6b) = ([0, 3], [3, 0]);
+    let expected6 = Some(vec![coord6a, [0, 0], coord6b]);
+    assert_eq!(
+        try_get_node_connection(&coord6a, &coord6b, &map, &map_size),
+        expected6
+    );
+    assert_eq!(
+        try_get_node_connection(&coord6b, &coord6a, &map, &map_size),
+        reverse(expected6)
+    );
+
+    let (coord7a, coord7b) = ([2, 3], [3, 1]);
+    let expected7 = Some(vec![coord7a, [2, 2], [3, 2], coord7b]);
+    assert_eq!(
+        try_get_node_connection(&coord7a, &coord7b, &map, &map_size),
+        expected7
+    );
+    assert_eq!(
+        try_get_node_connection(&coord7b, &coord7a, &map, &map_size),
+        reverse(expected7)
+    );
+
+    let (coord8a, coord8b) = ([1, 0], [1, 3]);
+    let expected8 = Some(vec![coord8a, [0, 0], [0, 3], coord8b]);
+    assert_eq!(
+        try_get_node_connection(&coord8a, &coord8b, &map, &map_size),
+        expected8
+    );
+    assert_eq!(
+        try_get_node_connection(&coord8b, &coord8a, &map, &map_size),
+        reverse(expected8)
+    );
+
+    let (coord9a, coord9b) = ([1, 0], [2, 2]);
+    let expected9 = Some(vec![coord9a, [3, 0], [3, 2], coord9b]);
+    assert_eq!(
+        try_get_node_connection(&coord9a, &coord9b, &map, &map_size),
+        expected9
+    );
+    assert_eq!(
+        try_get_node_connection(&coord9b, &coord9a, &map, &map_size),
+        reverse(expected9)
+    );
+
+    let (coord10a, coord10b) = ([0, 1], [3, 2]);
+    let expected10 = Some(vec![coord10a, [0, 0], [3, 0], coord10b]);
+    assert_eq!(
+        try_get_node_connection(&coord10a, &coord10b, &map, &map_size),
+        expected10
+    );
+    assert_eq!(
+        try_get_node_connection(&coord10b, &coord10a, &map, &map_size),
+        reverse(expected10)
+    );
+
+    let (coord11a, coord11b) = ([0, 1], [2, 2]);
+    let expected11 = Some(vec![coord11a, [0, 3], [2, 3], coord11b]);
+    assert_eq!(
+        try_get_node_connection(&coord11a, &coord11b, &map, &map_size),
+        expected11
+    );
+    assert_eq!(
+        try_get_node_connection(&coord11b, &coord11a, &map, &map_size),
+        reverse(expected11)
+    );
+
+    let (coord12a, coord12b) = ([1, 3], [3, 2]);
+    let expected12 = Some(vec![coord12a, [2, 3], [2, 2], coord12b]);
+    assert_eq!(
+        try_get_node_connection(&coord12a, &coord12b, &map, &map_size),
+        expected12
+    );
+    assert_eq!(
+        try_get_node_connection(&coord12b, &coord12a, &map, &map_size),
+        reverse(expected12)
     );
 }
