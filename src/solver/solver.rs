@@ -1,6 +1,9 @@
-use super::super::components::{Coord, Nodes, TileMap};
+use std::cmp::Ordering;
+use std::collections::HashMap;
+
+use super::super::components::{Coord, Nodes, Tile, TileMap};
 use super::connect::try_get_node_connection;
-use super::lut::{tile_map_to_coord_collection, CoordCollection};
+use super::lut::{create_coord_pair_collection, tile_map_to_coord_collection, CoordCollection};
 
 fn remove_tiles(map: &TileMap, coords: Vec<Coord>) -> TileMap {
     let mut new_map = map.clone();
@@ -33,6 +36,61 @@ fn get_trivial_connections(map: &TileMap, map_size: &[usize; 2]) -> Vec<Nodes> {
         .iter()
         .filter_map(|[coord1, coord2]| try_get_node_connection(coord1, coord2, map, &map_size))
         .collect()
+}
+
+fn get_ordered_available_connections(map: &TileMap, map_size: &[usize; 2]) -> Vec<Nodes> {
+    /*
+     * Connection order:
+     * 1. The fewer remaining tiles comes earlier
+     * 2. Tile which has more possible connections comes earlier
+     * 3. The fewer tile values comes earlier
+     */
+    let lut = tile_map_to_coord_collection(map);
+    let mut pair_collection = create_coord_pair_collection(&lut);
+    for pairs in pair_collection.values_mut() {
+        pairs.iter_mut().for_each(|pair| pair.sort());
+        pairs.sort();
+    }
+
+    let nodes: HashMap<Tile, Vec<Nodes>> = pair_collection
+        .iter()
+        .map(|(&tile, pairs)| {
+            (
+                tile,
+                pairs
+                    .iter()
+                    .filter_map(|[c1, c2]| try_get_node_connection(c1, c2, map, map_size))
+                    .collect::<Vec<Nodes>>(),
+            )
+        })
+        .collect();
+
+    let mut tiles: Vec<Tile> = nodes.iter().map(|(k, _)| k.clone()).collect();
+    tiles.sort_unstable_by(|a, b| {
+        let (n_coords_a, n_coords_b) = (lut[&a].len(), lut[&b].len());
+        if n_coords_a != n_coords_b {
+            return n_coords_a.partial_cmp(&n_coords_b).unwrap();
+        }
+
+        let (n_nodes_a, n_nodes_b) = (nodes[&a].len(), nodes[&b].len());
+        if n_nodes_a != n_nodes_b {
+            return n_nodes_b.partial_cmp(&n_nodes_a).unwrap();
+        }
+
+        a.partial_cmp(&b).unwrap()
+    });
+    tiles
+        .iter()
+        .map(|tile| nodes[&tile].clone())
+        .flatten()
+        .collect()
+}
+
+pub struct SichuanSolver {
+    maps: Vec<TileMap>,
+    indices: Vec<usize>,
+    assumed: Vec<Nodes>,
+    resolved: Vec<Nodes>,
 }
 
 #[test]
@@ -124,4 +182,46 @@ fn test_get_trivial_connections() {
             _ => panic!(),
         }
     }
+}
+
+#[test]
+fn test_get_ordered_available_connections() {
+    /*
+     * 0 x 0 1
+     * 1 2 2 x
+     * 0 2 2 3
+     * 0 x x 3
+     *
+     * 0: 4 tiles, 2 connections
+     * 1: 2 tiles, 0 connections
+     * 2: 4 tiles, 4 connections
+     * 3: 2 tiles, 1 connections
+     */
+    let map: TileMap = HashMap::from([
+        ([0, 0], 0),
+        ([0, 2], 0),
+        ([0, 3], 1),
+        ([1, 0], 1),
+        ([1, 1], 2),
+        ([1, 2], 2),
+        ([2, 0], 0),
+        ([2, 1], 2),
+        ([2, 2], 2),
+        ([2, 3], 3),
+        ([3, 0], 0),
+        ([3, 3], 3),
+    ]);
+    let map_size = [4, 4];
+
+    let actual = get_ordered_available_connections(&map, &map_size);
+    let expected = vec![
+        [[2, 3], [3, 3]],
+        [[1, 1], [1, 2]],
+        [[1, 1], [2, 1]],
+        [[1, 2], [2, 2]],
+        [[2, 1], [2, 2]],
+        [[0, 0], [0, 2]],
+        [[2, 0], [3, 0]],
+    ];
+    assert_eq!(actual, expected);
 }
