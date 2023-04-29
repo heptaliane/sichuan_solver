@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use super::super::components::{Coord, Nodes, Tile, TileMap};
 use super::connect::try_get_node_connection;
+use super::utils::get_node_edges;
 use super::lut::{create_coord_pair_collection, tile_map_to_coord_collection, CoordCollection};
 
 fn remove_tiles(map: &TileMap, coords: &Vec<Coord>) -> TileMap {
@@ -25,10 +26,6 @@ fn get_single_pair_tiles(lut: &CoordCollection) -> Vec<[Coord; 2]> {
     }
 
     pairs
-}
-
-fn get_node_edges(node: &Nodes) -> [Coord; 2] {
-    [node.first().unwrap().clone(), node.last().unwrap().clone()]
 }
 
 fn get_trivial_connections(map: &TileMap, map_size: &[usize; 2]) -> Vec<Nodes> {
@@ -151,6 +148,10 @@ impl SichuanSolverSnapshot {
         nodes.extend(self.resolved.clone());
         nodes
     }
+}
+
+pub fn solve(map: &TileMap) -> Result<Vec<Nodes>, ()> {
+    Err(())
 }
 
 #[test]

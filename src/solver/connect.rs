@@ -5,12 +5,6 @@ use super::super::components::{
 };
 use super::direction::{DOWN, LEFT, RIGHT, UP};
 
-fn get_size_from_map(map: &TileMap) -> [usize; 2] {
-    map.keys()
-        .fold([0, 0], |[mx, my], &[x, y]| [max(x, mx), max(y, my)])
-        .map(|v| v + 1)
-}
-
 fn move_coord(coord: &Coord, delta: &CoordDelta, map_size: &[usize; 2]) -> Option<Coord> {
     let moved_coord = [
         coord[0] as CoordDeltaElement + delta[0],
@@ -370,19 +364,6 @@ pub fn try_get_node_connection(
 }
 
 #[test]
-fn test_get_map_size() {
-    use std::collections::HashMap;
-    /* tile map:
-     * x 0 x 0
-     * 0 x x x
-     * x x 0 x
-     */
-    let map: TileMap = HashMap::from([([0, 1], 0), ([0, 3], 0), ([1, 0], 0), ([2, 2], 0)]);
-    let expected = [3, 4];
-    assert_eq!(get_size_from_map(&map), expected);
-}
-
-#[test]
 fn test_move_coord() {
     let map_size = [3, 4];
 
@@ -403,7 +384,7 @@ fn test_get_grid() {
      * x x x 0
      */
     let map: TileMap = HashMap::from([([0, 1], 0), ([0, 3], 0), ([1, 0], 0), ([2, 3], 0)]);
-    let map_size = get_size_from_map(&map);
+    let map_size = [3, 4];
 
     assert_eq!(get_grid(&[0, 2], &LEFT, &map, &map_size), None);
     assert_eq!(get_grid(&[0, 2], &RIGHT, &map, &map_size), None);
