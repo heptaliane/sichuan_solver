@@ -1,16 +1,19 @@
-use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use super::super::components::{Coord, Nodes, Tile, TileMap};
 use super::connect::try_get_node_connection;
-use super::utils::get_node_edges;
 use super::lut::{create_coord_pair_collection, tile_map_to_coord_collection, CoordCollection};
+use super::utils::{get_node_edges, get_size_from_map, pad_tilemap};
 
-fn remove_tiles(map: &TileMap, coords: &Vec<Coord>) -> TileMap {
+fn remove_tiles(map: &TileMap, nodes: &Vec<Nodes>) -> TileMap {
     let mut new_map = map.clone();
-    for coord in coords {
-        new_map.remove(coord);
-    }
+    nodes
+        .iter()
+        .map(|nodes| get_node_edges(&nodes))
+        .flatten()
+        .for_each(|coord| {
+            new_map.remove(&coord);
+        });
     new_map
 }
 
@@ -86,6 +89,7 @@ fn get_ordered_available_connections(map: &TileMap, map_size: &[usize; 2]) -> Ve
         .collect()
 }
 
+#[derive(Clone)]
 struct SichuanSolverSnapshot {
     map: TileMap,
     map_size: [usize; 2],
@@ -111,8 +115,7 @@ impl SichuanSolverSnapshot {
 
     fn resolve(&mut self) {
         let assumed = &self.connections[self.cursor];
-        let coords = get_node_edges(assumed);
-        let mut map = remove_tiles(&self.map, &coords.to_vec());
+        let mut map = remove_tiles(&self.map, &vec![assumed.to_vec()]);
 
         self.resolved.clear();
         loop {
@@ -121,14 +124,7 @@ impl SichuanSolverSnapshot {
                 break;
             }
 
-            map = remove_tiles(
-                &map,
-                &resolved
-                    .iter()
-                    .map(|nodes| get_node_edges(&nodes))
-                    .flatten()
-                    .collect(),
-            );
+            map = remove_tiles(&map, &resolved);
             self.resolved.extend(resolved);
         }
     }
@@ -150,8 +146,90 @@ impl SichuanSolverSnapshot {
     }
 }
 
-pub fn solve(map: &TileMap) -> Result<Vec<Nodes>, ()> {
-    Err(())
+pub struct SichuanSolver {
+    snapshots: Vec<SichuanSolverSnapshot>,
+    first_resolved: Vec<Nodes>,
+}
+
+impl SichuanSolver {
+    pub fn try_new(map: &TileMap) -> Option<Self> {
+        let pad_map = pad_tilemap(map);
+        let map_size = get_size_from_map(&pad_map);
+        let resolved = get_trivial_connections(&pad_map, &map_size);
+        match SichuanSolverSnapshot::try_new(&remove_tiles(&pad_map, &resolved), &map_size) {
+            Some(mut snapshot) => {
+                snapshot.resolve();
+                Some(Self {
+                    snapshots: vec![snapshot],
+                    first_resolved: resolved,
+                })
+            }
+            _ => None,
+        }
+    }
+
+    fn add_snapshot(&mut self) -> Result<(), ()> {
+        let latest_snapshot = self.snapshots.last().unwrap();
+        let map = remove_tiles(&latest_snapshot.map, &latest_snapshot.nodes());
+        match SichuanSolverSnapshot::try_new(&map, &latest_snapshot.map_size) {
+            Some(mut snapshot) => {
+                snapshot.resolve();
+                self.snapshots.push(snapshot);
+                Ok(())
+            }
+            _ => Err(()),
+        }
+    }
+
+    fn update_snapshot(&mut self) -> Result<(), ()> {
+        loop {
+            match self.snapshots.last_mut() {
+                Some(latest_snapshot) => match latest_snapshot.next() {
+                    Ok(()) => {
+                        latest_snapshot.resolve();
+                        return Ok(());
+                    }
+                    Err(()) => {
+                        self.snapshots.pop();
+                    }
+                },
+                _ => return Err(()),
+            }
+        }
+    }
+
+    fn is_completed(&self) -> bool {
+        let latest_snapshot = self.snapshots.last().unwrap();
+        let map = remove_tiles(&latest_snapshot.map, &latest_snapshot.nodes());
+        map.len() == 0
+    }
+
+    pub fn solve(&mut self) -> Result<(), ()> {
+        loop {
+            if self.add_snapshot().is_err() {
+                match self.is_completed() {
+                    true => return Ok(()),
+                    false => {
+                        if self.update_snapshot().is_err() {
+                            return Err(());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn result(&self) -> Vec<Nodes> {
+        let mut nodes = self.first_resolved.clone();
+        nodes.extend(
+            self.snapshots
+                .iter()
+                .map(|snapshot| snapshot.nodes())
+                .flatten()
+                .collect::<Vec<Nodes>>()
+        );
+        nodes
+    }
 }
 
 #[test]
@@ -167,13 +245,16 @@ fn test_remove_tiles() {
     ]);
 
     let expected1: TileMap = HashMap::from([([0, 1], 1), ([1, 2], 2), ([2, 1], 1), ([2, 2], 2)]);
-    assert_eq!(remove_tiles(&map, &vec![[0, 0], [1, 1]]), expected1);
+    assert_eq!(
+        remove_tiles(&map, &vec![vec![[0, 0], [0, 1], [1, 1]]]),
+        expected1
+    );
 
     let expected2: TileMap = HashMap::from([([0, 0], 0), ([1, 1], 0), ([1, 2], 2), ([2, 2], 2)]);
-    assert_eq!(remove_tiles(&map, &vec![[0, 1], [2, 1]]), expected2);
+    assert_eq!(remove_tiles(&map, &vec![vec![[0, 1], [2, 1]]]), expected2);
 
     let expected3: TileMap = HashMap::from([([0, 0], 0), ([0, 1], 1), ([1, 1], 0), ([2, 1], 1)]);
-    assert_eq!(remove_tiles(&map, &vec![[1, 2], [2, 2]]), expected3);
+    assert_eq!(remove_tiles(&map, &vec![vec![[1, 2], [2, 2]]]), expected3);
 }
 
 #[test]
@@ -316,14 +397,7 @@ fn test_snapshot() {
     ]);
     let map_size = [4, 4];
 
-    let map = remove_tiles(
-        &map,
-        &get_trivial_connections(&map, &map_size)
-            .iter()
-            .map(|nodes| get_node_edges(&nodes))
-            .flatten()
-            .collect(),
-    );
+    let map = remove_tiles(&map, &get_trivial_connections(&map, &map_size));
     let mut snapshot = SichuanSolverSnapshot::try_new(&map, &map_size).unwrap();
     assert_eq!(
         snapshot.connections,
@@ -403,4 +477,43 @@ fn test_snapshot() {
     );
 
     assert_eq!(snapshot.next(), Err(()));
+}
+
+#[test]
+fn test_sichuan_solver() {
+    /*
+     * 0 x 0 1
+     * 1 2 2 x
+     * 0 2 2 3
+     * 0 x x 3
+     */
+    let map: TileMap = HashMap::from([
+        ([0, 0], 0),
+        ([0, 2], 0),
+        ([0, 3], 1),
+        ([1, 0], 1),
+        ([1, 1], 2),
+        ([1, 2], 2),
+        ([2, 0], 0),
+        ([2, 1], 2),
+        ([2, 2], 2),
+        ([2, 3], 3),
+        ([3, 0], 0),
+        ([3, 3], 3),
+    ]);
+    let mut solver = SichuanSolver::try_new(&map).unwrap();
+
+    assert_eq!(solver.solve(), Ok(()));
+
+    assert_eq!(
+        solver.result(),
+        vec![
+            vec![[3, 4], [4, 4]],
+            vec![[1, 1], [1, 3]],
+            vec![[1, 4], [1, 1], [2, 1]],
+            vec![[3, 1], [4, 1]],
+            vec![[2, 2], [2, 3]],
+            vec![[3, 2], [3, 3]],
+        ]
+    );
 }

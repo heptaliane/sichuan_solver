@@ -1,5 +1,5 @@
 use super::super::components::{Coord, Tile, TileMap};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 pub type CoordCollection = HashMap<Tile, Vec<Coord>>;
 pub type CoordPairCollection = HashMap<Tile, Vec<[Coord; 2]>>;

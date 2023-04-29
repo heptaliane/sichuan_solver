@@ -5,7 +5,7 @@ pub fn pad_tilemap(map: &TileMap) -> TileMap {
     map.iter().map(|([x, y], &t)| ([x + 1, y + 1], t)).collect()
 }
 
-fn get_size_from_map(map: &TileMap) -> [usize; 2] {
+pub fn get_size_from_map(map: &TileMap) -> [usize; 2] {
     map.keys()
         .fold([0, 0], |[mx, my], &[x, y]| [max(x, mx), max(y, my)])
         .map(|v| v + 1)
