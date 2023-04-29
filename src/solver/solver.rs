@@ -5,10 +5,10 @@ use super::super::components::{Coord, Nodes, Tile, TileMap};
 use super::connect::try_get_node_connection;
 use super::lut::{create_coord_pair_collection, tile_map_to_coord_collection, CoordCollection};
 
-fn remove_tiles(map: &TileMap, coords: Vec<Coord>) -> TileMap {
+fn remove_tiles(map: &TileMap, coords: &Vec<Coord>) -> TileMap {
     let mut new_map = map.clone();
     for coord in coords {
-        new_map.remove(&coord);
+        new_map.remove(coord);
     }
     new_map
 }
@@ -18,7 +18,8 @@ fn get_single_pair_tiles(lut: &CoordCollection) -> Vec<[Coord; 2]> {
 
     for collections in lut.values() {
         if collections.len() == 2 {
-            let coords: Vec<Coord> = collections.clone().into_iter().collect();
+            let mut coords: Vec<Coord> = collections.clone().into_iter().collect();
+            coords.sort();
             pairs.push([coords[0], coords[1]]);
         }
     }
@@ -32,10 +33,12 @@ fn get_node_edges(node: &Nodes) -> [Coord; 2] {
 
 fn get_trivial_connections(map: &TileMap, map_size: &[usize; 2]) -> Vec<Nodes> {
     let lut = tile_map_to_coord_collection(map);
-    get_single_pair_tiles(&lut)
+    let mut nodes: Vec<Nodes> = get_single_pair_tiles(&lut)
         .iter()
         .filter_map(|[coord1, coord2]| try_get_node_connection(coord1, coord2, map, &map_size))
-        .collect()
+        .collect();
+    nodes.sort();
+    nodes
 }
 
 fn get_ordered_available_connections(map: &TileMap, map_size: &[usize; 2]) -> Vec<Nodes> {
@@ -86,11 +89,68 @@ fn get_ordered_available_connections(map: &TileMap, map_size: &[usize; 2]) -> Ve
         .collect()
 }
 
-pub struct SichuanSolver {
-    maps: Vec<TileMap>,
-    indices: Vec<usize>,
-    assumed: Vec<Nodes>,
+struct SichuanSolverSnapshot {
+    map: TileMap,
+    map_size: [usize; 2],
+    connections: Vec<Nodes>,
+    cursor: usize,
     resolved: Vec<Nodes>,
+}
+
+impl SichuanSolverSnapshot {
+    fn try_new(map: &TileMap, map_size: &[usize; 2]) -> Option<Self> {
+        let connections = get_ordered_available_connections(map, map_size);
+        match connections.len() {
+            0 => None,
+            _ => Some(Self {
+                map: map.clone(),
+                map_size: map_size.clone(),
+                connections,
+                cursor: 0,
+                resolved: Vec::new(),
+            }),
+        }
+    }
+
+    fn resolve(&mut self) {
+        let assumed = &self.connections[self.cursor];
+        let coords = get_node_edges(assumed);
+        let mut map = remove_tiles(&self.map, &coords.to_vec());
+
+        self.resolved.clear();
+        loop {
+            let resolved = get_trivial_connections(&map, &self.map_size);
+            if resolved.len() == 0 {
+                break;
+            }
+
+            map = remove_tiles(
+                &map,
+                &resolved
+                    .iter()
+                    .map(|nodes| get_node_edges(&nodes))
+                    .flatten()
+                    .collect(),
+            );
+            self.resolved.extend(resolved);
+        }
+    }
+
+    fn next(&mut self) -> Result<(), ()> {
+        match self.cursor + 1 < self.connections.len() {
+            true => {
+                self.cursor += 1;
+                Ok(())
+            }
+            false => Err(()),
+        }
+    }
+
+    fn nodes(&self) -> Vec<Nodes> {
+        let mut nodes = vec![self.connections[self.cursor].clone()];
+        nodes.extend(self.resolved.clone());
+        nodes
+    }
 }
 
 #[test]
@@ -106,13 +166,13 @@ fn test_remove_tiles() {
     ]);
 
     let expected1: TileMap = HashMap::from([([0, 1], 1), ([1, 2], 2), ([2, 1], 1), ([2, 2], 2)]);
-    assert_eq!(remove_tiles(&map, vec![[0, 0], [1, 1]]), expected1);
+    assert_eq!(remove_tiles(&map, &vec![[0, 0], [1, 1]]), expected1);
 
     let expected2: TileMap = HashMap::from([([0, 0], 0), ([1, 1], 0), ([1, 2], 2), ([2, 2], 2)]);
-    assert_eq!(remove_tiles(&map, vec![[0, 1], [2, 1]]), expected2);
+    assert_eq!(remove_tiles(&map, &vec![[0, 1], [2, 1]]), expected2);
 
     let expected3: TileMap = HashMap::from([([0, 0], 0), ([0, 1], 1), ([1, 1], 0), ([2, 1], 1)]);
-    assert_eq!(remove_tiles(&map, vec![[1, 2], [2, 2]]), expected3);
+    assert_eq!(remove_tiles(&map, &vec![[1, 2], [2, 2]]), expected3);
 }
 
 #[test]
@@ -138,7 +198,7 @@ fn test_get_single_pair_tiles() {
 
 #[test]
 fn test_get_trivial_connections() {
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashMap;
     let reverse = |nodes: &Nodes| {
         let mut reversed = nodes.clone();
         reversed.reverse();
@@ -224,4 +284,122 @@ fn test_get_ordered_available_connections() {
         [[2, 0], [3, 0]],
     ];
     assert_eq!(actual, expected);
+}
+
+#[test]
+fn test_snapshot() {
+    /*
+     * 0 x 0 1
+     * 1 2 2 x
+     * 0 2 2 3
+     * 0 x x 3
+     *
+     * 0: 4 tiles, 2 connections
+     * 1: 2 tiles, 0 connections
+     * 2: 4 tiles, 4 connections
+     * 3: 2 tiles, 1 connections
+     */
+    let map: TileMap = HashMap::from([
+        ([0, 0], 0),
+        ([0, 2], 0),
+        ([0, 3], 1),
+        ([1, 0], 1),
+        ([1, 1], 2),
+        ([1, 2], 2),
+        ([2, 0], 0),
+        ([2, 1], 2),
+        ([2, 2], 2),
+        ([2, 3], 3),
+        ([3, 0], 0),
+        ([3, 3], 3),
+    ]);
+    let map_size = [4, 4];
+
+    let map = remove_tiles(
+        &map,
+        &get_trivial_connections(&map, &map_size)
+            .iter()
+            .map(|nodes| get_node_edges(&nodes))
+            .flatten()
+            .collect(),
+    );
+    let mut snapshot = SichuanSolverSnapshot::try_new(&map, &map_size).unwrap();
+    assert_eq!(
+        snapshot.connections,
+        vec![
+            [[1, 1], [1, 2]],
+            [[1, 1], [2, 1]],
+            [[1, 2], [2, 2]],
+            [[2, 1], [2, 2]],
+            [[0, 0], [0, 2]],
+            [[2, 0], [3, 0]],
+        ]
+    );
+    snapshot.resolve();
+
+    assert_eq!(
+        snapshot.nodes(),
+        vec![
+            vec![[1, 1], [1, 2]],
+            vec![[0, 3], [1, 3], [1, 0]],
+            vec![[2, 1], [2, 2]],
+        ]
+    );
+
+    assert_eq!(snapshot.next(), Ok(()));
+    snapshot.resolve();
+    assert_eq!(
+        snapshot.nodes(),
+        vec![
+            vec![[1, 1], [2, 1]],
+            vec![[1, 2], [2, 2]],
+            vec![[0, 3], [1, 3], [1, 0]],
+        ]
+    );
+
+    assert_eq!(snapshot.next(), Ok(()));
+    snapshot.resolve();
+    assert_eq!(
+        snapshot.nodes(),
+        vec![
+            vec![[1, 2], [2, 2]],
+            vec![[1, 1], [2, 1]],
+            vec![[0, 3], [1, 3], [1, 0]],
+        ]
+    );
+
+    assert_eq!(snapshot.next(), Ok(()));
+    snapshot.resolve();
+    assert_eq!(
+        snapshot.nodes(),
+        vec![
+            vec![[2, 1], [2, 2]],
+            vec![[1, 1], [1, 2]],
+            vec![[0, 3], [1, 3], [1, 0]],
+        ]
+    );
+
+    assert_eq!(snapshot.next(), Ok(()));
+    snapshot.resolve();
+    assert_eq!(
+        snapshot.nodes(),
+        vec![
+            vec![[0, 0], [0, 2]],
+            vec![[0, 3], [0, 0], [1, 0]],
+            vec![[2, 0], [3, 0]],
+        ]
+    );
+
+    assert_eq!(snapshot.next(), Ok(()));
+    snapshot.resolve();
+    assert_eq!(
+        snapshot.nodes(),
+        vec![
+            vec![[2, 0], [3, 0]],
+            vec![[0, 0], [0, 2]],
+            vec![[0, 3], [3, 3], [3, 0], [1, 0]],
+        ]
+    );
+
+    assert_eq!(snapshot.next(), Err(()));
 }
