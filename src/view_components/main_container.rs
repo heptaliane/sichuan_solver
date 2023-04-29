@@ -4,9 +4,10 @@ use yew::callback::Callback;
 use yew::prelude::*;
 use yew::Properties;
 
-use super::super::components::{Coord, Tile};
+use super::super::components::{Coord, Tile, Nodes};
 use super::container_tab::ContainerTab;
 use super::edit_view::EditView;
+use super::result_view::ResultView;
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum MainContainerViewTarget {
@@ -22,6 +23,7 @@ pub struct MainContainerProps {
     pub rows: usize,
     pub cols: usize,
     pub tiles: HashMap<Coord, Tile>,
+    pub connections: Vec<Nodes>,
 
     pub on_tab_change: Callback<MainContainerViewTarget>,
     pub on_rows_change: Callback<usize>,
@@ -77,6 +79,12 @@ pub fn main_container(props: &MainContainerProps) -> Html {
                     },
                     MainContainerViewTarget::ResultView => html! {
                         <div>
+                            <ResultView
+                                cols={props.cols}
+                                rows={props.rows}
+                                tiles={props.tiles.clone()}
+                                connections={props.connections.to_owned()}
+                            />
                         </div>
                     },
                 }

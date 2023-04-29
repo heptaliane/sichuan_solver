@@ -55,16 +55,11 @@ impl Component for App {
             }
             Self::Message::EditorSubmitted(tiles) => {
                 self.tiles = tiles;
-                match solver::solver::SichuanSolver::try_new(&self.tiles) {
-                    Some(mut solver) => match solver.solve() {
-                        Ok(()) => {
-                            self.connections = solver.result();
-                            true
-                        }
-                        _ => false,
-                    },
-                    _ => false,
+                let mut sichuan_solver = solver::solver::SichuanSolver::new(&self.tiles);
+                if sichuan_solver.solve().is_ok() { 
+                    self.connections = sichuan_solver.result();
                 }
+                true
             }
         }
     }
@@ -77,6 +72,7 @@ impl Component for App {
                     rows={self.rows}
                     cols={self.cols}
                     tiles={self.tiles.clone()}
+                    connections={self.connections.to_owned()}
                     on_tab_change={
                         ctx.link().callback(|target| Self::Message::TabChanged(target))
                     }
