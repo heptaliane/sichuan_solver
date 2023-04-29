@@ -22,6 +22,7 @@ struct App {
     rows: usize,
     cols: usize,
     tiles: HashMap<components::Coord, components::Tile>,
+    connections: Vec<components::Nodes>,
 }
 
 impl Component for App {
@@ -34,6 +35,7 @@ impl Component for App {
             rows: DEFAULT_ROWS,
             cols: DEFAULT_COLS,
             tiles: HashMap::new(),
+            connections: Vec::new(),
         }
     }
 
@@ -53,7 +55,16 @@ impl Component for App {
             }
             Self::Message::EditorSubmitted(tiles) => {
                 self.tiles = tiles;
-                true
+                match solver::solver::SichuanSolver::try_new(&self.tiles) {
+                    Some(mut solver) => match solver.solve() {
+                        Ok(()) => {
+                            self.connections = solver.result();
+                            true
+                        }
+                        _ => false,
+                    },
+                    _ => false,
+                }
             }
         }
     }
