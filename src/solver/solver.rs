@@ -152,30 +152,37 @@ pub struct SichuanSolver {
 }
 
 impl SichuanSolver {
-    pub fn try_new(map: &TileMap) -> Option<Self> {
+    pub fn new(map: &TileMap) -> Self {
         let pad_map = pad_tilemap(map);
         let map_size = get_size_from_map(&pad_map);
         let resolved = get_trivial_connections(&pad_map, &map_size);
         match SichuanSolverSnapshot::try_new(&remove_tiles(&pad_map, &resolved), &map_size) {
             Some(mut snapshot) => {
                 snapshot.resolve();
-                Some(Self {
+                Self {
                     snapshots: vec![snapshot],
                     first_resolved: resolved,
-                })
+                }
             }
-            _ => None,
+            _ => Self {
+                snapshots: Vec::new(),
+                first_resolved: resolved,
+            },
         }
     }
 
     fn add_snapshot(&mut self) -> Result<(), ()> {
-        let latest_snapshot = self.snapshots.last().unwrap();
-        let map = remove_tiles(&latest_snapshot.map, &latest_snapshot.nodes());
-        match SichuanSolverSnapshot::try_new(&map, &latest_snapshot.map_size) {
-            Some(mut snapshot) => {
-                snapshot.resolve();
-                self.snapshots.push(snapshot);
-                Ok(())
+        match self.snapshots.last() {
+            Some(latest_snapshot) => {
+                let map = remove_tiles(&latest_snapshot.map, &latest_snapshot.nodes());
+                match SichuanSolverSnapshot::try_new(&map, &latest_snapshot.map_size) {
+                    Some(mut snapshot) => {
+                        snapshot.resolve();
+                        self.snapshots.push(snapshot);
+                        Ok(())
+                    }
+                    _ => Err(()),
+                }
             }
             _ => Err(()),
         }
@@ -226,7 +233,7 @@ impl SichuanSolver {
                 .iter()
                 .map(|snapshot| snapshot.nodes())
                 .flatten()
-                .collect::<Vec<Nodes>>()
+                .collect::<Vec<Nodes>>(),
         );
         nodes
     }
@@ -501,7 +508,7 @@ fn test_sichuan_solver() {
         ([3, 0], 0),
         ([3, 3], 3),
     ]);
-    let mut solver = SichuanSolver::try_new(&map).unwrap();
+    let mut solver = SichuanSolver::new(&map);
 
     assert_eq!(solver.solve(), Ok(()));
 
