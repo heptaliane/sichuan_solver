@@ -89,6 +89,11 @@ impl AsyncTileImage {
         let img = Rc::try_unwrap(self.image).unwrap();
         Element::from(img).into()
     }
+
+    pub fn resize(&self, width: usize, height: usize) {
+        self.image.as_ref().set_width(width as u32);
+        self.image.as_ref().set_height(height as u32);
+    }
 }
 
 pub async fn create_all_tiles() -> Vec<AsyncTileImage> {

@@ -7,6 +7,9 @@ use yew::Properties;
 use super::super::components::{Coord, Tile};
 use super::icons::tiles::AsyncTileImage;
 
+const TILE_IMAGE_WIDTH: usize = 20;
+const TILE_IMAGE_HEIGHT: usize = 25;
+
 #[derive(Properties, PartialEq)]
 pub struct ResultConnectionListItemProps {
     pub selected: bool,
@@ -33,6 +36,7 @@ pub fn result_connection_list_item(props: &ResultConnectionListItemProps) -> Htm
             move |_| {
                 spawn_local(async move {
                     let fetched_image = AsyncTileImage::new(tile).await;
+                    fetched_image.resize(TILE_IMAGE_WIDTH, TILE_IMAGE_HEIGHT);
                     image_clone.set(Some(fetched_image.node()));
                 });
                 || ()
@@ -55,11 +59,13 @@ pub fn result_connection_list_item(props: &ResultConnectionListItemProps) -> Htm
                 <div class="container">
                     <div class="row">
                         <div class="col-3">
-                            <div class="card bg-light fit-content">
-                            {match image.as_ref() {
-                                Some(img) => {Html::VRef(img.to_owned())},
-                                None => html!{},
-                            }}
+                            <div class="tile-container">
+                                <div class="card bg-light">
+                                    {match image.as_ref() {
+                                        Some(img) => {Html::VRef(img.to_owned())},
+                                        None => html!{},
+                                    }}
+                                </div>
                             </div>
                         </div>
                         <div class="col-9 left-align">
