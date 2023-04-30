@@ -11,5 +11,6 @@ mod icons;
 mod input_form_control_element;
 mod result_connection_list;
 mod result_connection_list_item;
+mod result_map_canvas;
 mod result_view;
 mod tile_map_canvas;
