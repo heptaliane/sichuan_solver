@@ -6,7 +6,7 @@ use js_sys::Promise;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
-use web_sys::HtmlImageElement;
+use web_sys::{Element, HtmlImageElement, Node};
 
 use super::super::super::components::Tile;
 
@@ -68,33 +68,30 @@ async fn create_image_from_svg(svg_str: &str) -> Result<Rc<HtmlImageElement>, Js
 }
 
 #[derive(PartialEq, Clone)]
-pub struct TileImageProvider {
-    tiles: Vec<Rc<HtmlImageElement>>,
+pub struct AsyncTileImage {
+    image: Rc<HtmlImageElement>,
 }
 
-impl TileImageProvider {
-    pub fn blank_new() -> Self {
-        Self { tiles: Vec::new() }
-    }
-
-    pub async fn new() -> Self {
-        let futures = SVG_ICON_STR.iter().map(|svg| create_image_from_svg(svg));
-        let results = join_all(futures).await;
-        let mut tiles = Vec::new();
-        for result in results {
-            tiles.push(result.unwrap());
-        }
-        Self { tiles }
-    }
-
-    pub fn get(&self, tile: Tile) -> Option<Rc<HtmlImageElement>> {
-        match self.tiles.get(tile as usize) {
-            Some(img) => Some(img.clone()),
-            _ => None,
+impl AsyncTileImage {
+    pub async fn new(tile: Tile) -> Self {
+        let future = create_image_from_svg(SVG_ICON_STR[tile as usize]);
+        let result = future.await;
+        Self {
+            image: result.unwrap(),
         }
     }
 
-    pub fn iter(&self) -> std::slice::Iter<Rc<HtmlImageElement>> {
-        self.tiles.iter()
+    pub fn as_ref(&self) -> &HtmlImageElement {
+        self.image.as_ref()
     }
+
+    pub fn node(self) -> Node {
+        let img = Rc::try_unwrap(self.image).unwrap();
+        Element::from(img).into()
+    }
+}
+
+pub async fn create_all_tiles() -> Vec<AsyncTileImage> {
+    let promises = (0..N_SVG_ICONS).map(|tile| AsyncTileImage::new(tile as Tile));
+    join_all(promises).await
 }

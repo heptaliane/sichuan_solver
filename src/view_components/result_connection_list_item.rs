@@ -1,33 +1,45 @@
-use std::rc::Rc;
-
-use web_sys::{Element, HtmlImageElement, Node};
+use wasm_bindgen_futures::spawn_local;
+use web_sys::Node;
 use yew::callback::Callback;
 use yew::prelude::*;
 use yew::Properties;
 
-use super::super::components::Coord;
+use super::super::components::{Coord, Tile};
+use super::icons::tiles::AsyncTileImage;
 
 #[derive(Properties, PartialEq)]
 pub struct ResultConnectionListItemProps {
     pub selected: bool,
     pub id: usize,
     pub coords: [Coord; 2],
-    pub image: Option<Rc<HtmlImageElement>>,
+    pub tile: Tile,
 
     pub onclick: Callback<Option<usize>>,
 }
 
 #[function_component(ResultConnectionListItem)]
 pub fn result_connection_list_item(props: &ResultConnectionListItemProps) -> Html {
-    let node: Option<Node> = match props.image {
-        Some(ref img) => Some(Element::from(img.as_ref().clone()).into()),
-        _ => None,
-    };
     let onclick = props.onclick.clone();
     let next_id = match props.selected {
         true => None,
         false => Some(props.id),
     };
+
+    let image = use_state(|| None::<Node>);
+    {
+        let image_clone = image.to_owned();
+        let tile = props.tile.to_owned();
+        use_effect_with_deps(
+            move |_| {
+                spawn_local(async move {
+                    let fetched_image = AsyncTileImage::new(tile).await;
+                    image_clone.set(Some(fetched_image.node()));
+                });
+                || ()
+            },
+            (),
+        );
+    }
 
     html! {
         <div
@@ -44,12 +56,10 @@ pub fn result_connection_list_item(props: &ResultConnectionListItemProps) -> Htm
                     <div class="row">
                         <div class="col-3">
                             <div class="card bg-light fit-content">
-                                {
-                                    match node {
-                                        Some(img) => Html::VRef(img),
-                                        _ => html!{},
-                                    }
-                                }
+                            {match image.as_ref() {
+                                Some(img) => {Html::VRef(img.to_owned())},
+                                None => html!{},
+                            }}
                             </div>
                         </div>
                         <div class="col-9 left-align">

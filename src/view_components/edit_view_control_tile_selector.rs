@@ -4,8 +4,8 @@ use yew::prelude::*;
 use yew::Properties;
 
 use super::super::components::Tile;
-use super::icons::tiles::TileImageProvider;
 use super::edit_view_control_tile_selector_button::EditViewControlTileSelectorButton;
+use super::icons::tiles::create_all_tiles;
 
 #[derive(Properties, PartialEq)]
 pub struct EditViewControlTileSelectorProps {
@@ -16,13 +16,13 @@ pub struct EditViewControlTileSelectorProps {
 
 #[function_component(EditViewControlTileSelector)]
 pub fn edit_view_control_tile_selector(props: &EditViewControlTileSelectorProps) -> Html {
-    let images = use_state(|| TileImageProvider::blank_new());
+    let images = use_state(|| Vec::new());
     {
         let images_clone = images.to_owned();
         use_effect_with_deps(
             move |_| {
                 spawn_local(async move {
-                    let fetched_images = TileImageProvider::new().await;
+                    let fetched_images = create_all_tiles().await;
                     images_clone.set(fetched_images);
                 });
                 || ()
@@ -41,10 +41,10 @@ pub fn edit_view_control_tile_selector(props: &EditViewControlTileSelectorProps)
                 html! {
                     <div class="col-2">
                         <EditViewControlTileSelectorButton
-                            img={img.to_owned()}
+                            img={img.clone()}
                             selected={selected}
                             onclick={Callback::from(move |_| {
-                                onchange.emit(match selected { 
+                                onchange.emit(match selected {
                                     true => None,
                                     false => Some(tile),
                                 });

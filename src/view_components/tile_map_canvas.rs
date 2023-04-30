@@ -9,7 +9,7 @@ use yew::virtual_dom::AttrValue;
 use yew::{NodeRef, Properties};
 
 use super::super::components::{Coord, CoordElement, Tile};
-use super::icons::tiles::TileImageProvider;
+use super::icons::tiles::{create_all_tiles, AsyncTileImage};
 
 const TILE_WIDTH: usize = 80;
 const TILE_HEIGHT: usize = 100;
@@ -21,12 +21,12 @@ const GRID_WIDTH: f64 = 1.0;
 
 pub enum TileMapCanvasMsg {
     TileClicked([i32; 2]),
-    ImageLoaded(TileImageProvider),
+    ImageLoaded(Vec<AsyncTileImage>),
 }
 
 #[derive(Properties, PartialEq)]
 pub struct TileMapCanvas {
-    images: TileImageProvider,
+    images: Vec<AsyncTileImage>,
     canvas: NodeRef,
 }
 
@@ -54,9 +54,9 @@ impl Component for TileMapCanvas {
     type Message = TileMapCanvasMsg;
     type Properties = TileMapCanvasProps;
 
-    fn create(ctx: &Context<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
         Self {
-            images: TileImageProvider::blank_new(),
+            images: Vec::new(),
             canvas: NodeRef::default(),
         }
     }
@@ -98,7 +98,7 @@ impl Component for TileMapCanvas {
                 .link()
                 .callback(|provider| Self::Message::ImageLoaded(provider));
             spawn_local(async move {
-                let fetched_images = TileImageProvider::new().await;
+                let fetched_images = create_all_tiles().await;
                 onload.emit(fetched_images);
             });
         } else {
@@ -204,7 +204,7 @@ impl TileMapCanvas {
         h: f64,
         tile: Tile,
     ) {
-        if let Some(img) = self.images.get(tile) {
+        if let Some(img) = self.images.get(tile as usize) {
             let result =
                 ctx.draw_image_with_html_image_element_and_dw_and_dh(img.as_ref(), x, y, w, h);
             match result {
