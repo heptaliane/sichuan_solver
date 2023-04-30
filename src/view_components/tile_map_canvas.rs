@@ -8,7 +8,7 @@ use yew::prelude::*;
 use yew::virtual_dom::AttrValue;
 use yew::{NodeRef, Properties};
 
-use super::super::components::{Coord, CoordElement, Tile};
+use super::super::components::{Coord, CoordElement, Tile, TileMap};
 use super::icons::tiles::{create_all_tiles, AsyncTileImage};
 
 const TILE_WIDTH: usize = 80;
@@ -42,7 +42,7 @@ pub struct TileMapCanvasProps {
     #[prop_or(MAP_MARGIN)]
     pub map_margin: usize,
 
-    pub tiles: HashMap<Coord, Tile>,
+    pub tiles: TileMap,
 
     #[prop_or(HashMap::new())]
     pub bg_color: HashMap<Coord, AttrValue>,

@@ -1,17 +1,15 @@
-use std::collections::HashMap;
-
 use yew::callback::Callback;
 use yew::prelude::*;
 use yew::Properties;
 
-use super::super::components::{Coord, Tile};
+use super::super::components::{Coord, TileMap};
 use super::tile_map_canvas::TileMapCanvas;
 
 #[derive(Properties, PartialEq)]
 pub struct EditMapCanvasProps {
     pub rows: usize,
     pub cols: usize,
-    pub tiles: HashMap<Coord, Tile>,
+    pub tiles: TileMap,
 
     pub onselect: Callback<Coord>,
 }
