@@ -204,18 +204,6 @@ fn get_overwrapped_yrange(grid1: &Grid, grid2: &Grid) -> Option<[CoordElement; 2
     }
 }
 
-fn is_connected_with_single_line(grid1: &Grid, grid2: &Grid) -> bool {
-    match (grid1, grid2) {
-        (g1, g2) if is_horizonal(g1) && is_horizonal(g2) && g1[0][0] == g2[0][0] => {
-            get_overwrapped_yrange(g1, g2) != None
-        }
-        (g1, g2) if is_vertical(g1) && is_vertical(g2) && g1[0][1] == g2[0][1] => {
-            get_overwrapped_xrange(g1, g2) != None
-        }
-        _ => false,
-    }
-}
-
 fn try_get_double_node_connection(
     &coord1: &Coord,
     &coord2: &Coord,
@@ -605,58 +593,6 @@ fn test_get_overlapped_yrange() {
     check_all([[0, 0], [0, 2]], [[0, 1], [0, 2]], Some([1, 2]));
     check_all([[0, 0], [0, 2]], [[0, 1], [0, 3]], Some([1, 2]));
     check_all([[0, 0], [0, 1]], [[0, 2], [0, 3]], None);
-}
-
-#[test]
-fn test_is_connect_with_single_line() {
-    assert!(is_connected_with_single_line(
-        &[[0, 0], [0, 2]],
-        &[[0, 1], [0, 3]]
-    ));
-    assert!(is_connected_with_single_line(
-        &[[0, 0], [0, 2]],
-        &[[0, 2], [0, 3]]
-    ));
-    assert!(!is_connected_with_single_line(
-        &[[0, 0], [0, 2]],
-        &[[1, 1], [1, 3]]
-    ));
-    assert!(!is_connected_with_single_line(
-        &[[0, 0], [0, 1]],
-        &[[0, 2], [0, 3]]
-    ));
-    assert!(is_connected_with_single_line(
-        &[[0, 0], [2, 0]],
-        &[[1, 0], [3, 0]]
-    ));
-    assert!(is_connected_with_single_line(
-        &[[0, 0], [2, 0]],
-        &[[2, 0], [3, 0]]
-    ));
-    assert!(!is_connected_with_single_line(
-        &[[0, 0], [2, 0]],
-        &[[1, 1], [3, 1]]
-    ));
-    assert!(!is_connected_with_single_line(
-        &[[0, 0], [1, 0]],
-        &[[2, 0], [3, 0]]
-    ));
-    assert!(!is_connected_with_single_line(
-        &[[0, 0], [1, 0]],
-        &[[0, 0], [0, 1]]
-    ));
-    assert!(!is_connected_with_single_line(
-        &[[0, 0], [2, 0]],
-        &[[1, 0], [1, 1]]
-    ));
-    assert!(!is_connected_with_single_line(
-        &[[0, 1], [1, 1]],
-        &[[0, 0], [1, 2]]
-    ));
-    assert!(!is_connected_with_single_line(
-        &[[0, 1], [0, 2]],
-        &[[0, 0], [1, 0]]
-    ));
 }
 
 #[test]
