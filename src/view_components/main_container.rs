@@ -81,8 +81,8 @@ pub fn main_container(props: &MainContainerProps) -> Html {
                     MainContainerViewTarget::ResultView => html! {
                         <div>
                             <ResultView
-                                cols={props.cols}
-                                rows={props.rows}
+                                cols={props.cols + 2}
+                                rows={props.rows + 2}
                                 tiles={pad_tilemap(&props.tiles)}
                                 connections={props.connections.to_owned()}
                             />

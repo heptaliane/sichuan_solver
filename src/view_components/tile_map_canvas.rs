@@ -105,6 +105,7 @@ impl Component for TileMapCanvas {
             self.reset_map(ctx);
             self.draw_backgrounds(ctx);
             self.draw_images(ctx);
+            self.draw_grids(ctx);
         }
     }
 }
@@ -166,7 +167,10 @@ impl TileMapCanvas {
             let (x, y) = (self.tile_left(ctx, xpos), self.tile_top(ctx, ypos));
             self.draw_background(&context, x, y, w, h, DEFAULT_BG_COLOR);
         }
+    }
 
+    fn draw_grids(&self, ctx: &Context<Self>) { 
+        let context = self.canvas_context();
         let (rows, cols) = (ctx.props().rows, ctx.props().cols);
         context.set_stroke_style(&JsValue::from_str(GRID_COLOR));
         context.set_line_width(GRID_WIDTH);

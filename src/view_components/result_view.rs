@@ -5,6 +5,7 @@ use yew::Properties;
 
 use super::super::components::{Coord, Nodes, Tile};
 use super::card::Card;
+use super::result_map_canvas::ResultMapCanvas;
 use super::result_connection_list::ResultConnectionList;
 
 #[derive(Properties, PartialEq)]
@@ -32,12 +33,20 @@ pub fn result_view(props: &ResultViewProps) -> Html {
                         tiles={props.tiles.to_owned()}
                         connections={props.connections.to_owned()}
                         selected={*selected_index}
-                        onselect={onselect}
+                        onselect={onselect.to_owned()}
                     />
                 </Card>
             </div>
             <div class="col-12 col-lg-8">
                 <Card>
+                    <ResultMapCanvas
+                        rows={props.rows}
+                        cols={props.cols}
+                        tiles={props.tiles.to_owned()}
+                        connections={props.connections.to_owned()}
+                        cursor={*selected_index}
+                        onselect={onselect.to_owned()}
+                    />
                 </Card>
             </div>
         </div>
