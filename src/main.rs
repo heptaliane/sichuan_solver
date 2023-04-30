@@ -58,6 +58,7 @@ impl Component for App {
                 let mut sichuan_solver = solver::solver::SichuanSolver::new(&self.tiles);
                 if sichuan_solver.solve().is_ok() { 
                     self.connections = sichuan_solver.result();
+                    self.target_view = view_components::main_container::MainContainerViewTarget::ResultView;
                 }
                 true
             }

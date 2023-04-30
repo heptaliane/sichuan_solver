@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use yew::prelude::*;
 use yew::Properties;
 
+use super::super::components::{Coord, Nodes, Tile};
 use super::card::Card;
-use super::super::components::{Coord, Tile, Nodes};
+use super::result_connection_list::ResultConnectionList;
 
 #[derive(Properties, PartialEq)]
 pub struct ResultViewProps {
@@ -17,10 +18,22 @@ pub struct ResultViewProps {
 
 #[function_component(ResultView)]
 pub fn result_view(props: &ResultViewProps) -> Html {
+    let selected_index = use_state(|| None::<usize>);
+    let onselect = {
+        let selected_index = selected_index.clone();
+        Callback::from(move |idx| selected_index.set(idx))
+    };
+
     html! {
         <div class="row">
             <div class="col-12 col-lg-4">
                 <Card>
+                    <ResultConnectionList
+                        tiles={props.tiles.to_owned()}
+                        connections={props.connections.to_owned()}
+                        selected={*selected_index}
+                        onselect={onselect}
+                    />
                 </Card>
             </div>
             <div class="col-12 col-lg-8">
@@ -30,4 +43,3 @@ pub fn result_view(props: &ResultViewProps) -> Html {
         </div>
     }
 }
-

@@ -2,10 +2,10 @@ use std::rc::Rc;
 
 use base64;
 use futures::future::join_all;
+use js_sys::Promise;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
-use js_sys::Promise;
 use web_sys::HtmlImageElement;
 
 use super::super::super::components::Tile;
@@ -57,7 +57,7 @@ async fn create_image_from_svg(svg_str: &str) -> Result<Rc<HtmlImageElement>, Js
     let promise = Promise::new(&mut |resolve, _| {
         let img_clone = Rc::clone(&img_rc);
         let closure = Closure::wrap(Box::new(move || {
-            resolve.call0(&JsValue::null());
+            let _ = resolve.call0(&JsValue::null());
         }) as Box<dyn FnMut()>);
         img_clone.set_onload(Some(closure.as_ref().unchecked_ref()));
         closure.forget();
@@ -87,8 +87,11 @@ impl TileImageProvider {
         Self { tiles }
     }
 
-    pub fn get(&self, tile: Tile) -> &Rc<HtmlImageElement> {
-        &self.tiles[tile as usize]
+    pub fn get(&self, tile: Tile) -> Option<Rc<HtmlImageElement>> {
+        match self.tiles.get(tile as usize) {
+            Some(img) => Some(img.clone()),
+            _ => None,
+        }
     }
 
     pub fn iter(&self) -> std::slice::Iter<Rc<HtmlImageElement>> {

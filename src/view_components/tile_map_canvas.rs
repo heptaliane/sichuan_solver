@@ -204,16 +204,13 @@ impl TileMapCanvas {
         h: f64,
         tile: Tile,
     ) {
-        let result = ctx.draw_image_with_html_image_element_and_dw_and_dh(
-            self.images.get(tile).as_ref(),
-            x,
-            y,
-            w,
-            h,
-        );
-        match result {
-            Err(_) => log::info!("Failed to load image."),
-            _ => (),
+        if let Some(img) = self.images.get(tile) {
+            let result =
+                ctx.draw_image_with_html_image_element_and_dw_and_dh(img.as_ref(), x, y, w, h);
+            match result {
+                Err(_) => log::info!("Failed to load image."),
+                _ => (),
+            }
         }
     }
 

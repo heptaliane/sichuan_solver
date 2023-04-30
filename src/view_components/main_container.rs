@@ -4,7 +4,8 @@ use yew::callback::Callback;
 use yew::prelude::*;
 use yew::Properties;
 
-use super::super::components::{Coord, Tile, Nodes};
+use super::super::components::{Coord, Nodes, Tile};
+use super::super::solver::utils::pad_tilemap;
 use super::container_tab::ContainerTab;
 use super::edit_view::EditView;
 use super::result_view::ResultView;
@@ -82,7 +83,7 @@ pub fn main_container(props: &MainContainerProps) -> Html {
                             <ResultView
                                 cols={props.cols}
                                 rows={props.rows}
-                                tiles={props.tiles.clone()}
+                                tiles={pad_tilemap(&props.tiles)}
                                 connections={props.connections.to_owned()}
                             />
                         </div>
