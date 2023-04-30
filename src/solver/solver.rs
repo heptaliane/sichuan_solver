@@ -148,6 +148,7 @@ impl SichuanSolverSnapshot {
 
 pub struct SichuanSolver {
     snapshots: Vec<SichuanSolverSnapshot>,
+    initial_map: TileMap,
     first_resolved: Vec<Nodes>,
 }
 
@@ -161,11 +162,13 @@ impl SichuanSolver {
                 snapshot.resolve();
                 Self {
                     snapshots: vec![snapshot],
+                    initial_map: pad_map,
                     first_resolved: resolved,
                 }
             }
             _ => Self {
                 snapshots: Vec::new(),
+                initial_map: pad_map,
                 first_resolved: resolved,
             },
         }
@@ -206,9 +209,12 @@ impl SichuanSolver {
     }
 
     fn is_completed(&self) -> bool {
-        let latest_snapshot = self.snapshots.last().unwrap();
-        let map = remove_tiles(&latest_snapshot.map, &latest_snapshot.nodes());
-        map.len() == 0
+        match self.snapshots.last() {
+            Some(latest_snapshot) => remove_tiles(&latest_snapshot.map, &latest_snapshot.nodes()),
+            _ => remove_tiles(&self.initial_map, &self.first_resolved),
+        }
+        .len()
+            == 0
     }
 
     pub fn solve(&mut self) -> Result<(), ()> {
