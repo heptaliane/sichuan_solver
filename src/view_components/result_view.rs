@@ -28,7 +28,7 @@ pub fn result_view(props: &ResultViewProps) -> Html {
     html! {
         <div class="row">
             <div class="col-12 col-lg-4">
-                <Card>
+                <Card header={"Solving steps"}>
                     <ResultConnectionList
                         tiles={props.tiles.to_owned()}
                         connections={props.connections.to_owned()}

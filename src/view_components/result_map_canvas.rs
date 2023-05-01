@@ -41,6 +41,7 @@ pub fn result_map_canvas(props: &ResultMapCanvasProps) -> Html {
     });
 
     let mut backgrounds: HashMap<Coord, AttrValue> = HashMap::new();
+    let mut current_node: Option<Nodes> = None;
     if let Some(cursor) = props.cursor {
         let (taken, _) = props.connections.split_at(cursor);
         backgrounds.extend(
@@ -57,6 +58,9 @@ pub fn result_map_canvas(props: &ResultMapCanvasProps) -> Html {
                 .map(|&coord| (coord, AttrValue::from(ACTIVE_TILE_COLOR)))
                 .collect::<HashMap<Coord, AttrValue>>(),
         );
+        if let Some(node) = props.connections.get(cursor) {
+            current_node = Some(node.clone());
+        }
     }
 
     html! {
@@ -66,6 +70,7 @@ pub fn result_map_canvas(props: &ResultMapCanvasProps) -> Html {
                 cols={props.cols}
                 tiles={props.tiles.to_owned()}
                 bg_color={backgrounds}
+                connection={current_node}
                 onclick={handle_select}
             />
         </div>
