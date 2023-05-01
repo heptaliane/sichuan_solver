@@ -3,7 +3,7 @@ use std::cmp::{max, min};
 use super::super::components::{
     Coord, CoordDelta, CoordDeltaElement, CoordElement, Grid, Nodes, TileMap,
 };
-use super::direction::{DOWN, LEFT, RIGHT, UP};
+use super::direction::{RIGHT, UP, DOWN, LEFT};
 
 fn move_coord(coord: &Coord, delta: &CoordDelta, map_size: &[usize; 2]) -> Option<Coord> {
     let moved_coord = [
@@ -62,11 +62,11 @@ fn get_grid_pair(
     }
 }
 
-fn is_horizonal(grid: &Grid) -> bool {
+fn is_vertical(grid: &Grid) -> bool {
     grid[0][0] == grid[1][0]
 }
 
-fn is_vertical(grid: &Grid) -> bool {
+fn is_horizontal(grid: &Grid) -> bool {
     grid[0][1] == grid[1][1]
 }
 
@@ -90,14 +90,14 @@ fn get_grid_yrange(grid: &Grid) -> [CoordElement; 2] {
 
 fn get_intersection(grid1: &Grid, grid2: &Grid) -> Option<Coord> {
     match (grid1, grid2) {
-        (g1, g2) if is_horizonal(g1) && is_vertical(g2) => match (g1[0][0], g2[0][1]) {
+        (g1, g2) if is_vertical(g1) && is_horizontal(g2) => match (g1[0][0], g2[0][1]) {
             (x, _) if max(g2[0][0], g2[1][0]) < x => None,
             (x, _) if min(g2[0][0], g2[1][0]) > x => None,
             (_, y) if max(g1[0][1], g1[1][1]) < y => None,
             (_, y) if min(g1[0][1], g1[1][1]) > y => None,
             (x, y) => Some([x, y]),
         },
-        (g1, g2) if is_vertical(g1) && is_horizonal(g2) => match (g2[0][0], g1[0][1]) {
+        (g1, g2) if is_horizontal(g1) && is_vertical(g2) => match (g2[0][0], g1[0][1]) {
             (x, _) if max(g1[0][0], g1[1][0]) < x => None,
             (x, _) if min(g1[0][0], g1[1][0]) > x => None,
             (_, y) if max(g2[0][1], g2[1][1]) < y => None,
@@ -108,7 +108,7 @@ fn get_intersection(grid1: &Grid, grid2: &Grid) -> Option<Coord> {
     }
 }
 
-fn can_horizontal_connect(
+fn can_vertical_connect(
     y1: CoordElement,
     y2: CoordElement,
     x: CoordElement,
@@ -126,20 +126,20 @@ fn can_horizontal_connect(
     .all(|y| !map.contains_key(&[x, y]))
 }
 
-fn explore_horizontal_connection(
+fn explore_vertical_connection(
     xrange: &[CoordElement; 2],
     yaxis: &[CoordElement; 2],
     map: &TileMap,
 ) -> Option<Grid> {
     for x in xrange[0]..=xrange[1] {
-        if can_horizontal_connect(yaxis[0], yaxis[1], x, false, map) {
+        if can_vertical_connect(yaxis[0], yaxis[1], x, false, map) {
             return Some([[x, yaxis[0]], [x, yaxis[1]]]);
         }
     }
     None
 }
 
-fn can_vertical_connect(
+fn can_horizontal_connect(
     x1: CoordElement,
     x2: CoordElement,
     y: CoordElement,
@@ -157,13 +157,13 @@ fn can_vertical_connect(
     .all(|x| !map.contains_key(&[x, y]))
 }
 
-fn explore_vertical_connection(
+fn explore_horizontal_connection(
     yrange: &[CoordElement; 2],
     xaxis: &[CoordElement; 2],
     map: &TileMap,
 ) -> Option<Grid> {
     for y in yrange[0]..=yrange[1] {
-        if can_vertical_connect(xaxis[0], xaxis[1], y, false, map) {
+        if can_horizontal_connect(xaxis[0], xaxis[1], y, false, map) {
             return Some([[xaxis[0], y], [xaxis[1], y]]);
         }
     }
@@ -214,12 +214,12 @@ fn try_get_double_node_connection(
         return Some(nodes);
     }
 
-    if coord1[0] == coord2[0] && can_horizontal_connect(coord1[1], coord2[1], coord1[0], true, map)
+    if coord1[0] == coord2[0] && can_vertical_connect(coord1[1], coord2[1], coord1[0], true, map)
     {
         return Some(nodes);
     }
 
-    if coord1[1] == coord2[1] && can_vertical_connect(coord1[0], coord2[0], coord1[1], true, map) {
+    if coord1[1] == coord2[1] && can_horizontal_connect(coord1[0], coord2[0], coord1[1], true, map) {
         return Some(nodes);
     }
 
@@ -232,16 +232,16 @@ fn try_get_triple_node_connection(
     map: &TileMap,
     map_size: &[usize; 2],
 ) -> Option<Nodes> {
-    let (v_dir1, v_dir2) = match coord1[0] > coord2[0] {
-        true => (UP, DOWN),
-        false => (DOWN, UP),
-    };
-    let (h_dir1, h_dir2) = match coord1[1] > coord2[1] {
+    let (h_dir1, h_dir2) = match coord1[0] > coord2[0] {
         true => (LEFT, RIGHT),
         false => (RIGHT, LEFT),
     };
+    let (v_dir1, v_dir2) = match coord1[1] > coord2[1] {
+        true => (UP, DOWN),
+        false => (DOWN, UP),
+    };
 
-    for (dir1, dir2) in [(v_dir1, h_dir2), (h_dir1, v_dir2)].iter() {
+    for (dir1, dir2) in [(h_dir1, v_dir2), (v_dir1, h_dir2)].iter() {
         if let Some([grid1, grid2]) = get_grid_pair(coord1, coord2, dir1, dir2, map, map_size) {
             if let Some(intersection) = get_intersection(&grid1, &grid2) {
                 return Some(vec![coord1.to_owned(), intersection, coord2.to_owned()]);
@@ -262,23 +262,6 @@ fn try_get_quadro_node_connection(
     let yaxis = [coord1[1], coord2[1]];
 
     /*
-     * | x |   o x x
-     * o x |   | x o
-     * x x o   | x |
-     */
-    for direction in [UP, DOWN].iter() {
-        let grids = get_grid_pair(coord1, coord2, direction, direction, map, map_size);
-        if let Some([grid1, grid2]) = grids {
-            if let Some(xrange) = get_overwrapped_xrange(&grid1, &grid2) {
-                let grid = explore_horizontal_connection(&xrange, &yaxis, map);
-                if let Some([coord1b, coord2b]) = grid {
-                    return Some(vec![coord1.to_owned(), coord1b, coord2b, coord2.to_owned()]);
-                }
-            }
-        }
-    }
-
-    /*
      * o - -   - - o
      * x x x   x x x
      * x o -   - o x
@@ -286,8 +269,8 @@ fn try_get_quadro_node_connection(
     for direction in [LEFT, RIGHT].iter() {
         let grids = get_grid_pair(coord1, coord2, direction, direction, map, map_size);
         if let Some([grid1, grid2]) = grids {
-            if let Some(yrange) = get_overwrapped_yrange(&grid1, &grid2) {
-                let grid = explore_vertical_connection(&yrange, &xaxis, map);
+            if let Some(xrange) = get_overwrapped_xrange(&grid1, &grid2) {
+                let grid = explore_vertical_connection(&xrange, &yaxis, map);
                 if let Some([coord1b, coord2b]) = grid {
                     return Some(vec![coord1.to_owned(), coord1b, coord2b, coord2.to_owned()]);
                 }
@@ -296,18 +279,18 @@ fn try_get_quadro_node_connection(
     }
 
     /*
-     * | x o
-     * | x |
-     * o x |
+     * | x |   o x x
+     * o x |   | x o
+     * x x o   | x |
      */
-    if let Some([grid1, grid2]) = match coord1[0] > coord2[0] {
-        true => get_grid_pair(coord1, coord2, &UP, &DOWN, map, map_size),
-        false => get_grid_pair(coord1, coord2, &DOWN, &UP, map, map_size),
-    } {
-        if let Some(xrange) = get_overwrapped_xrange(&grid1, &grid2) {
-            let grid = explore_horizontal_connection(&xrange, &yaxis, map);
-            if let Some([coord1b, coord2b]) = grid {
-                return Some(vec![coord1.to_owned(), coord1b, coord2b, coord2.to_owned()]);
+    for direction in [UP, DOWN].iter() {
+        let grids = get_grid_pair(coord1, coord2, direction, direction, map, map_size);
+        if let Some([grid1, grid2]) = grids {
+            if let Some(yrange) = get_overwrapped_yrange(&grid1, &grid2) {
+                let grid = explore_horizontal_connection(&yrange, &xaxis, map);
+                if let Some([coord1b, coord2b]) = grid {
+                    return Some(vec![coord1.to_owned(), coord1b, coord2b, coord2.to_owned()]);
+                }
             }
         }
     }
@@ -317,12 +300,29 @@ fn try_get_quadro_node_connection(
      * x x x
      * o - -
      */
-    if let Some([grid1, grid2]) = match coord1[1] > coord2[1] {
+    if let Some([grid1, grid2]) = match coord1[0] > coord2[0] {
         true => get_grid_pair(coord1, coord2, &LEFT, &RIGHT, map, map_size),
         false => get_grid_pair(coord1, coord2, &RIGHT, &LEFT, map, map_size),
     } {
+        if let Some(xrange) = get_overwrapped_xrange(&grid1, &grid2) {
+            let grid = explore_vertical_connection(&xrange, &yaxis, map);
+            if let Some([coord1b, coord2b]) = grid {
+                return Some(vec![coord1.to_owned(), coord1b, coord2b, coord2.to_owned()]);
+            }
+        }
+    }
+
+    /*
+     * | x o
+     * | x |
+     * o x |
+     */
+    if let Some([grid1, grid2]) = match coord1[1] > coord2[1] {
+        true => get_grid_pair(coord1, coord2, &UP, &DOWN, map, map_size),
+        false => get_grid_pair(coord1, coord2, &DOWN, &UP, map, map_size),
+    } {
         if let Some(yrange) = get_overwrapped_yrange(&grid1, &grid2) {
-            let grid = explore_vertical_connection(&yrange, &xaxis, map);
+            let grid = explore_horizontal_connection(&yrange, &xaxis, map);
             if let Some([coord1b, coord2b]) = grid {
                 return Some(vec![coord1.to_owned(), coord1b, coord2b, coord2.to_owned()]);
             }
@@ -355,12 +355,12 @@ pub fn try_get_node_connection(
 fn test_move_coord() {
     let map_size = [3, 4];
 
-    assert_eq!(move_coord(&[1, 1], &DOWN, &map_size), Some([2, 1]));
-    assert_eq!(move_coord(&[1, 1], &RIGHT, &map_size), Some([1, 2]));
-    assert_eq!(move_coord(&[1, 1], &UP, &map_size), Some([0, 1]));
-    assert_eq!(move_coord(&[1, 1], &LEFT, &map_size), Some([1, 0]));
-    assert_eq!(move_coord(&[0, 0], &UP, &map_size), None);
+    assert_eq!(move_coord(&[1, 1], &RIGHT, &map_size), Some([2, 1]));
+    assert_eq!(move_coord(&[1, 1], &DOWN, &map_size), Some([1, 2]));
+    assert_eq!(move_coord(&[1, 1], &LEFT, &map_size), Some([0, 1]));
+    assert_eq!(move_coord(&[1, 1], &UP, &map_size), Some([1, 0]));
     assert_eq!(move_coord(&[0, 0], &LEFT, &map_size), None);
+    assert_eq!(move_coord(&[0, 0], &UP, &map_size), None);
 }
 
 #[test]
@@ -374,53 +374,42 @@ fn test_get_grid() {
     let map: TileMap = HashMap::from([([0, 1], 0), ([0, 3], 0), ([1, 0], 0), ([2, 3], 0)]);
     let map_size = [3, 4];
 
-    assert_eq!(get_grid(&[0, 2], &LEFT, &map, &map_size), None);
-    assert_eq!(get_grid(&[0, 2], &RIGHT, &map, &map_size), None);
-    assert_eq!(get_grid(&[1, 3], &UP, &map, &map_size), None);
-    assert_eq!(get_grid(&[1, 3], &DOWN, &map, &map_size), None);
+    assert_eq!(get_grid(&[0, 2], &UP, &map, &map_size), None);
+    assert_eq!(get_grid(&[0, 2], &DOWN, &map, &map_size), None);
+    assert_eq!(get_grid(&[1, 3], &LEFT, &map, &map_size), None);
+    assert_eq!(get_grid(&[1, 3], &RIGHT, &map, &map_size), None);
     assert_eq!(
-        get_grid(&[0, 3], &LEFT, &map, &map_size),
+        get_grid(&[0, 3], &UP, &map, &map_size),
         Some([[0, 3], [0, 2]])
     );
     assert_eq!(
-        get_grid(&[0, 1], &RIGHT, &map, &map_size),
+        get_grid(&[0, 1], &DOWN, &map, &map_size),
         Some([[0, 1], [0, 2]])
     );
     assert_eq!(
-        get_grid(&[2, 3], &UP, &map, &map_size),
+        get_grid(&[2, 3], &LEFT, &map, &map_size),
         Some([[2, 3], [1, 3]])
     );
     assert_eq!(
-        get_grid(&[0, 3], &DOWN, &map, &map_size),
+        get_grid(&[0, 3], &RIGHT, &map, &map_size),
         Some([[0, 3], [1, 3]])
     );
     assert_eq!(
-        get_grid(&[1, 2], &LEFT, &map, &map_size),
+        get_grid(&[1, 2], &UP, &map, &map_size),
         Some([[1, 2], [1, 1]])
     );
     assert_eq!(
-        get_grid(&[1, 2], &RIGHT, &map, &map_size),
+        get_grid(&[1, 2], &DOWN, &map, &map_size),
         Some([[1, 2], [1, 3]])
     );
     assert_eq!(
-        get_grid(&[1, 2], &UP, &map, &map_size),
+        get_grid(&[1, 2], &LEFT, &map, &map_size),
         Some([[1, 2], [0, 2]])
     );
     assert_eq!(
-        get_grid(&[1, 2], &DOWN, &map, &map_size),
+        get_grid(&[1, 2], &RIGHT, &map, &map_size),
         Some([[1, 2], [2, 2]])
     );
-}
-
-#[test]
-fn test_is_horizontal() {
-    let grid1 = [[0, 0], [0, 1]];
-    let grid2 = [[0, 0], [1, 0]];
-    let grid3 = [[0, 0], [1, 1]];
-
-    assert_eq!(is_horizonal(&grid1), true);
-    assert_eq!(is_horizonal(&grid2), false);
-    assert_eq!(is_horizonal(&grid3), false);
 }
 
 #[test]
@@ -429,9 +418,20 @@ fn test_is_vertical() {
     let grid2 = [[0, 0], [1, 0]];
     let grid3 = [[0, 0], [1, 1]];
 
-    assert_eq!(is_vertical(&grid1), false);
-    assert_eq!(is_vertical(&grid2), true);
+    assert_eq!(is_vertical(&grid1), true);
+    assert_eq!(is_vertical(&grid2), false);
     assert_eq!(is_vertical(&grid3), false);
+}
+
+#[test]
+fn test_is_horizontal() {
+    let grid1 = [[0, 0], [0, 1]];
+    let grid2 = [[0, 0], [1, 0]];
+    let grid3 = [[0, 0], [1, 1]];
+
+    assert_eq!(is_horizontal(&grid1), false);
+    assert_eq!(is_horizontal(&grid2), true);
+    assert_eq!(is_horizontal(&grid3), false);
 }
 
 #[test]
@@ -498,7 +498,7 @@ fn test_get_intersection() {
 }
 
 #[test]
-fn test_explore_horizontal_connection() {
+fn test_explore_vartical_connection() {
     use std::collections::HashMap;
     let map1: TileMap = HashMap::from([([1, 1], 0), ([3, 1], 0)]);
     /* tile map:
@@ -508,17 +508,17 @@ fn test_explore_horizontal_connection() {
      * | 0 |
      */
     assert_eq!(
-        explore_horizontal_connection(&[1, 3], &[0, 2], &map1),
+        explore_vertical_connection(&[1, 3], &[0, 2], &map1),
         Some([[2, 0], [2, 2]])
     );
-    assert_eq!(explore_horizontal_connection(&[1, 1], &[0, 2], &map1), None);
+    assert_eq!(explore_vertical_connection(&[1, 1], &[0, 2], &map1), None);
 
     let map2: TileMap = HashMap::from([([1, 1], 0), ([2, 1], 0), ([3, 1], 0)]);
-    assert_eq!(explore_horizontal_connection(&[1, 3], &[0, 2], &map2), None);
+    assert_eq!(explore_vertical_connection(&[1, 3], &[0, 2], &map2), None);
 }
 
 #[test]
-fn test_explore_vertical_connection() {
+fn test_explore_horizontal_connection() {
     use std::collections::HashMap;
     let map1: TileMap = HashMap::from([([1, 1], 0), ([1, 3], 0)]);
     /* tile map:
@@ -527,13 +527,13 @@ fn test_explore_vertical_connection() {
      * x -----
      */
     assert_eq!(
-        explore_vertical_connection(&[1, 3], &[0, 2], &map1),
+        explore_horizontal_connection(&[1, 3], &[0, 2], &map1),
         Some([[0, 2], [2, 2]])
     );
-    assert_eq!(explore_vertical_connection(&[1, 1], &[0, 2], &map1), None);
+    assert_eq!(explore_horizontal_connection(&[1, 1], &[0, 2], &map1), None);
 
     let map2: TileMap = HashMap::from([([1, 1], 0), ([1, 2], 0), ([1, 3], 0)]);
-    assert_eq!(explore_vertical_connection(&[1, 3], &[0, 2], &map2), None);
+    assert_eq!(explore_horizontal_connection(&[1, 3], &[0, 2], &map2), None);
 }
 
 #[test]
