@@ -228,8 +228,8 @@ impl TileMapCanvas {
     fn draw_node(&self, ctx: &Context<Self>) {
         if let Some(node) = ctx.props().connection.as_ref() {
             let (offset_x, offset_y) = (
-                ctx.props().tile_height as f64 * 0.5,
                 ctx.props().tile_width as f64 * 0.5,
+                ctx.props().tile_height as f64 * 0.5,
             );
             let context = self.canvas_context();
             context.set_stroke_style(&JsValue::from_str(NODE_COLOR));
@@ -238,13 +238,13 @@ impl TileMapCanvas {
             if let Some((&[start_x, start_y], coords)) = node.split_first() {
                 context.begin_path();
                 context.move_to(
-                    self.tile_left(ctx, start_y) + offset_y,
-                    self.tile_top(ctx, start_x) + offset_x,
+                    self.tile_left(ctx, start_x) + offset_x,
+                    self.tile_top(ctx, start_y) + offset_y,
                 );
                 for &[x, y] in coords {
                     context.line_to(
-                        self.tile_left(ctx, y) + offset_y,
-                        self.tile_top(ctx, x) + offset_x,
+                        self.tile_left(ctx, x) + offset_x,
+                        self.tile_top(ctx, y) + offset_y,
                     );
                 }
                 context.stroke();
