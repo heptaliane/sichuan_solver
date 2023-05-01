@@ -8,7 +8,7 @@ use yew::prelude::*;
 use yew::virtual_dom::AttrValue;
 use yew::{NodeRef, Properties};
 
-use super::super::components::{Coord, CoordElement, Tile, TileMap};
+use super::super::components::{Coord, CoordElement, Nodes, Tile, TileMap};
 use super::icons::tiles::{create_all_tiles, AsyncTileImage};
 
 const TILE_WIDTH: usize = 80;
@@ -18,6 +18,8 @@ const DEFAULT_BG_COLOR: &str = "white";
 const BLANK_BG_COLOR: &str = "gainsboro";
 const GRID_COLOR: &str = "gray";
 const GRID_WIDTH: f64 = 1.0;
+const NODE_COLOR: &str = "orange";
+const NODE_WIDTH: f64 = 5.0;
 
 pub enum TileMapCanvasMsg {
     TileClicked([i32; 2]),
@@ -46,6 +48,8 @@ pub struct TileMapCanvasProps {
 
     #[prop_or(HashMap::new())]
     pub bg_color: HashMap<Coord, AttrValue>,
+    #[prop_or(None)]
+    pub connection: Option<Nodes>,
 
     pub onclick: Callback<Coord>,
 }
@@ -106,6 +110,7 @@ impl Component for TileMapCanvas {
             self.draw_backgrounds(ctx);
             self.draw_images(ctx);
             self.draw_grids(ctx);
+            self.draw_node(ctx);
         }
     }
 }
@@ -169,17 +174,19 @@ impl TileMapCanvas {
         }
     }
 
-    fn draw_grids(&self, ctx: &Context<Self>) { 
+    fn draw_grids(&self, ctx: &Context<Self>) {
         let context = self.canvas_context();
         let (rows, cols) = (ctx.props().rows, ctx.props().cols);
         context.set_stroke_style(&JsValue::from_str(GRID_COLOR));
         context.set_line_width(GRID_WIDTH);
         for i in 0..=cols {
+            context.begin_path();
             context.move_to(self.tile_left(ctx, i), self.tile_top(ctx, 0));
             context.line_to(self.tile_left(ctx, i), self.tile_top(ctx, rows));
             context.stroke();
         }
         for i in 0..=rows {
+            context.begin_path();
             context.move_to(self.tile_left(ctx, 0), self.tile_top(ctx, i));
             context.line_to(self.tile_left(ctx, cols), self.tile_top(ctx, i));
             context.stroke();
@@ -214,6 +221,33 @@ impl TileMapCanvas {
             match result {
                 Err(_) => log::info!("Failed to load image."),
                 _ => (),
+            }
+        }
+    }
+
+    fn draw_node(&self, ctx: &Context<Self>) {
+        if let Some(node) = ctx.props().connection.as_ref() {
+            let (offset_x, offset_y) = (
+                ctx.props().tile_height as f64 * 0.5,
+                ctx.props().tile_width as f64 * 0.5,
+            );
+            let context = self.canvas_context();
+            context.set_stroke_style(&JsValue::from_str(NODE_COLOR));
+            context.set_line_width(NODE_WIDTH);
+
+            if let Some((&[start_x, start_y], coords)) = node.split_first() {
+                context.begin_path();
+                context.move_to(
+                    self.tile_left(ctx, start_y) + offset_y,
+                    self.tile_top(ctx, start_x) + offset_x,
+                );
+                for &[x, y] in coords {
+                    context.line_to(
+                        self.tile_left(ctx, y) + offset_y,
+                        self.tile_top(ctx, x) + offset_x,
+                    );
+                }
+                context.stroke();
             }
         }
     }
