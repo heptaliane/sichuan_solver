@@ -75,7 +75,7 @@ pub fn edit_view_control(props: &EditViewControlProps) -> Html {
                             onsubmit.emit(());
                         })}
                     >
-                        { "Submit" }
+                        { "Solve" }
                     </button>
             </div>
         </div>
