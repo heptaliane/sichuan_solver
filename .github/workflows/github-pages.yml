@@ -43,7 +43,7 @@ jobs:
           command: install
           args: trunk
       - name: Build yew app
-        run: trunk build --release
+        run: trunk build --release --public-url sichuan_solver
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
